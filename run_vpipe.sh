@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+cd V-pipe/
+
 cluster='bsub -J COVID-vpipe-SRA-{rule} -M {params.mem} -n {threads} -W {params.time} -R rusage[mem={params.mem},scratch={params.scratch}] -e {log.errfile} -o {log.outfile}'
 
 bsub \

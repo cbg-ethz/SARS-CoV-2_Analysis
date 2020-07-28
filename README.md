@@ -8,12 +8,15 @@ First, clone the repository:
 $ git clone --recurse-submodules https://github.com/cbg-ethz/SARS-CoV-2_Analysis
 ```
 
-The whole analysis can then be reproduced by executing the following lines:
+The whole analysis can then be reproduced by executing the following lines (for paired-end reads only):
 
 ```bash
 $ ./run_data_retrieval.sh
 $ python prepare_vpipe_input.py
+
+$ cp ./vpipe.config V-pipe/
 $ ./run_vpipe.sh
+
 $ python gather_vcf_files.py
 $ ./run_analysis.sh
 ```
