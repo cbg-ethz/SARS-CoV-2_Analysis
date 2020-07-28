@@ -2,7 +2,13 @@
 
 ## Usage
 
-The whole analysis can be reproduced by executing the following lines:
+First, clone the repository:
+
+```bash
+$ git clone --recurse-submodules https://github.com/cbg-ethz/SARS-CoV-2_Analysis
+```
+
+The whole analysis can then be reproduced by executing the following lines:
 
 ```bash
 $ ./run_data_retrieval.sh
