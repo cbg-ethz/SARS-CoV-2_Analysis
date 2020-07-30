@@ -287,6 +287,9 @@ rule plot_coverage_per_locus:
 
         import seaborn as sns
         import matplotlib.pyplot as plt
+        from matplotlib.gridspec import GridSpec
+
+        from dna_features_viewer import GraphicFeature, GraphicRecord
 
         # fix big boom on macOS
         import matplotlib
@@ -295,8 +298,9 @@ rule plot_coverage_per_locus:
         # read data
         df = pd.read_csv(input.fname)
         sel = pd.read(input.fname_selection, squeeze=True)
-
         df_sub = df[sel]
+
+        df_genes = pd.read_csv('references/genes.csv')
 
         # compute data statistics
         df_stats = pd.DataFrame({
@@ -306,31 +310,44 @@ rule plot_coverage_per_locus:
         })
 
         # plot data
-        plt.figure(figsize=(8, 6))
+        fig, (ax_genes, ax_coverage) = plt.subplots(
+            nrows=2, ncols=1,
+            # gridspec_kw={'height_ratios': [10] + [1] * len(features_tads) + [5]},
+            sharex=True,
+            figsize=(8, 6))
 
-        plt.plot(
+        # genes
+        features = df_genes.apply(
+            lambda x: GraphicFeature(
+                start=x.start, end=x.end, label=x.gene_name),
+            axis=1).tolist()
+
+        record = GraphicRecord(sequence_length=df.shape[0], features=features)
+        record.plot(ax=ax_genes, with_ruler=False)
+
+        # coverage
+        ax_coverage.plot(
             df_stats.index,
             df_stats['median'],
             label='median')
-        plt.plot(
+        ax_coverage.plot(
             df_stats.index,
             df_stats['lower quartile'],
             alpha=.5,
             label='lower quartile')
-        plt.plot(
+        ax_coverage.plot(
             df_stats.index,
             df_stats['upper quartile'],
             alpha=.5,
             label='upper quartile')
 
-        plt.xlabel('Genomic position [bp]')
-        plt.ylabel('Per base read count')
-        # plt.yscale('log')
+        ax_coverage.set_xlabel('Genomic position [bp]')
+        ax_coverage.set_ylabel('Per base read count')
 
-        plt.legend(loc='best')
+        ax_coverage.legend(loc='best')
 
-        plt.tight_layout()
-        plt.savefig(output.fname)
+        fig.tight_layout()
+        fig.savefig(output.fname)
 
 
 rule plot_coverage_per_sample:
