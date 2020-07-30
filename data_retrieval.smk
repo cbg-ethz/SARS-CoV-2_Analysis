@@ -276,7 +276,8 @@ rule aggregate_results:
 
 rule plot_coverage_per_locus:
     input:
-        fname = 'results/coverage.csv'
+        fname = 'results/coverage.csv',
+        fname_selection = 'results/selected_samples.csv'
     output:
         fname = report('plots/coverage_per_locus.pdf', caption='report/empty_caption.rst')
     resources:
@@ -293,12 +294,15 @@ rule plot_coverage_per_locus:
 
         # read data
         df = pd.read_csv(input.fname)
+        sel = pd.read(input.fname_selection, squeeze=True)
+
+        df_sub = df[sel]
 
         # compute data statistics
         df_stats = pd.DataFrame({
-            'lower quartile': df.quantile(q=.25, axis=1),
-            'median': df.quantile(q=.5, axis=1),
-            'upper quartile': df.quantile(q=.75, axis=1)
+            'lower quartile': df_sub.quantile(q=.25, axis=1),
+            'median': df_sub.quantile(q=.5, axis=1),
+            'upper quartile': df_sub.quantile(q=.75, axis=1)
         })
 
         # plot data
