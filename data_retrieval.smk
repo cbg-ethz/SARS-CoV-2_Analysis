@@ -287,6 +287,7 @@ rule plot_coverage_per_locus:
 
         import seaborn as sns
         import matplotlib.pyplot as plt
+        from matplotlib.patches import Patch
         from matplotlib.gridspec import GridSpec
 
         from dna_features_viewer import GraphicFeature, GraphicRecord
@@ -312,18 +313,28 @@ rule plot_coverage_per_locus:
         # plot data
         fig, (ax_genes, ax_coverage) = plt.subplots(
             nrows=2, ncols=1,
-            # gridspec_kw={'height_ratios': [10] + [1] * len(features_tads) + [5]},
+            gridspec_kw={'height_ratios': [1, 2]},
             sharex=True,
-            figsize=(8, 6))
+            figsize=(10, 6))
 
         # genes
         features = df_genes.apply(
             lambda x: GraphicFeature(
-                start=x.start, end=x.end, label=x.gene_name),
+                start=x.start, end=x.end, color=x.color),
             axis=1).tolist()
 
         record = GraphicRecord(sequence_length=df.shape[0], features=features)
         record.plot(ax=ax_genes, with_ruler=False)
+
+        legend_elements = df_genes.apply(
+            lambda x: Patch(
+                facecolor=x.color, edgecolor='black', label=x.gene_name),
+            axis=1).tolist()
+
+        # Create the figure
+        ax_genes.legend(
+            handles=legend_elements, loc='upper center',
+            ncol=df_genes.shape[0] // 2, fontsize=10, frameon=False)
 
         # coverage
         ax_coverage.plot(
