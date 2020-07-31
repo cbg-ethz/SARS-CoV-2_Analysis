@@ -283,6 +283,8 @@ rule plot_coverage_per_locus:
     resources:
         mem_mb = 5_000
     run:
+        import itertools
+
         import pandas as pd
 
         import seaborn as sns
@@ -295,6 +297,11 @@ rule plot_coverage_per_locus:
         # fix big boom on macOS
         import matplotlib
         matplotlib.use('Agg')
+
+        # helper functions
+        def flip(items, ncol):
+            # https://stackoverflow.com/a/10101532/1474740
+            return list(itertools.chain(*[items[i::ncol] for i in range(ncol)]))
 
         # read data
         df = pd.read_csv(input.fname)
@@ -313,7 +320,7 @@ rule plot_coverage_per_locus:
         # plot data
         fig, (ax_genes, ax_coverage) = plt.subplots(
             nrows=2, ncols=1,
-            gridspec_kw={'height_ratios': [1, 2]},
+            gridspec_kw={'height_ratios': [1, 5]},
             sharex=True,
             figsize=(10, 6))
 
@@ -331,10 +338,10 @@ rule plot_coverage_per_locus:
                 facecolor=x.color, edgecolor='black', label=x.gene_name),
             axis=1).tolist()
 
-        # Create the figure
+        ncol = df_genes.shape[0] // 2 + 1
         ax_genes.legend(
-            handles=legend_elements, loc='upper center',
-            ncol=df_genes.shape[0] // 2, fontsize=10, frameon=False)
+            handles=flip(legend_elements, ncol), loc='upper center',
+            ncol=ncol, fontsize=10, frameon=False)
 
         # coverage
         ax_coverage.plot(
