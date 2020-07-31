@@ -397,7 +397,7 @@ rule plot_coverage_per_sample:
         # plot data
         accession_order = df_mq.sort_values('value').index.tolist()
 
-        plt.figure(figsize=(8, 6))
+        plt.figure(figsize=(10, 6))
 
         plt.plot(
             accession_order,
