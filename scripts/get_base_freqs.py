@@ -11,12 +11,12 @@ import os
 import glob
 
 
-collectionName = sys.argv[1]
+collectionName = snakemake.input['vcf_dir']
 delCoverageThreshold = 0     # by default deletions with any coverage are used
 delThreshold = 0.0           # by default deletions at all frequencies are used
-delThreshold = float(sys.argv[2])
-delCoverageThreshold = int(sys.argv[3])
-list = sys.argv[4]
+delThreshold = snakemake.config['params']['deletion_threshold']
+delCoverageThreshold = snakemake.config['params']['deletion_coverage_threshold']
+list = sys.argv[4] # TODO: what to put here?
 usedSamples = []
 
 
@@ -27,18 +27,18 @@ f.close()
 for line in lines:
 	usedSamples.append(line.split(',')[0])
 print len(usedSamples)
-	
+
 
 delFilter = ""
 if delThreshold > 0.0 or delCoverageThreshold > 0:
 	delFilter = "_delFilter_" + str(delThreshold) + "_" + str(delCoverageThreshold)
 
 
-outFileName = collectionName.rstrip("/") + delFilter + ".txt"
+outFileName = snakemake.output['fname']
 outFile = open(outFileName, "w")
 outFile.write("SAMPLE" + "\t" + "POS" + "\t" + "REF_BASE" + "\t" + "(ADJUSTED_)READ_COUNT" + "\t" + "A_freq" + "\t" + "C_freq" + "\t" + "G_freq" + "\t" + "T_freq" + "\t" + "DEL_freq"+ "\n")
 print outFileName
-#pattern = "samples/*/*/variants/SNVs/snvs.vcf"    
+#pattern = "samples/*/*/variants/SNVs/snvs.vcf"
 pattern = collectionName + "/*.vcf"       # all files matching this pattern are processed
 fileList = glob.glob(pattern)
 
@@ -59,15 +59,15 @@ for file in fileList:
 	refBaseAtPos = {}       # pos -> refBase
 	postProbs = {}
 	prevLine = ""
-    
+
 	with open(file) as f:
 		#print file
 		lines = f.read().splitlines()
 		for line in lines:
-            
+
 			if line.startswith('#'):   #skip lines not referring to a mutation
 				continue
-            
+
              ## get the base read counts from the line
 			elems = line.split('\t')
 			pos= int(elems[1])
@@ -82,21 +82,21 @@ for file in fileList:
 			total = int(Ftot) + int(Rtot)
 			altTotal = int(Fvar) + int(Rvar)
 			mutFreq = float(altTotal)/float(total)
-            
-           
+
+
 			if pos not in posBaseCounts:
 				baseCounts = dict([('A', 0), ('C', 0), ('G', 0), ('T', 0), ('-', 0), ('Total', 0)])
 				posBaseCounts[pos] = baseCounts
 
-                        
+
             ## some checks that read counts in multiple rows refering to same position make sense
 			if posBaseCounts[pos][altBase] != 0:
 				if posBaseCounts[pos][altBase] != altTotal:
 					print "Warning: different alt base count: " + str(posBaseCounts[pos][altBase]) + " = " + str(altTotal)
-       
+
 			if posBaseCounts[pos]['Total'] != 0 and posBaseCounts[pos]['Total'] != total:
 				print "Warning: different total base count: " + str(posBaseCounts[pos]['Total']) + " = " + str(total)
-            
+
 			## set alt base and total read count for this position
 			posBaseCounts[pos][altBase] = altTotal
 			posBaseCounts[pos]['Total'] = total
@@ -108,7 +108,7 @@ for file in fileList:
 	for pos in posBaseCounts:
 		refCount = posBaseCounts[pos]['Total'] - (posBaseCounts[pos]['A'] + posBaseCounts[pos]['C'] + posBaseCounts[pos]['G'] + posBaseCounts[pos]['T'] + posBaseCounts[pos]['-'])
 		posBaseCounts[pos][refBaseAtPos[int(pos)]] = refCount
-        
+
 		## another check that read counts make sense
 		if refCount < 0:
 			print "ERROR: NEGATIVE REF COUNT AT POSITION " + pos + " in " + file + ":"
@@ -124,14 +124,14 @@ for file in fileList:
 			useDel = False
 		if posBaseCounts[pos]['Total'] <= delCoverageThreshold:
 			useDel = False
-			
+
 		## if we don't consider the deletion, update total considered read counts
 		totalConsidered = posBaseCounts[pos]['Total']
 		if not useDel:
 			totalConsidered = posBaseCounts[pos]['Total']-posBaseCounts[pos]['-']
-            
+
 		## check if we should skip this position
-		if totalConsidered == 0:                            # no reads left after removing deletion    
+		if totalConsidered == 0:                            # no reads left after removing deletion
 			continue
 		if posBaseCounts[pos][refBase] == totalConsidered:  # no mutation left after removing deletions
 			continue

@@ -3,3 +3,7 @@ workdir: pipeline_run_analysis
 input:
     vcf_directory: vcf_PE
     covariates: pipeline_run_retrieval/results/final_dataframe.csv
+
+params:
+    deletion_threshold: 0.005
+    deletion_coverage_threshold: 0

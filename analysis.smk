@@ -6,7 +6,8 @@ localrules: all
 
 rule all:
     input:
-        'data/vcf_data.csv'
+        'plots/heatmaps/',
+        'plots/histograms/'
 
 
 rule gather_vcf_files:
@@ -14,34 +15,26 @@ rule gather_vcf_files:
         vcf_dir = srcdir(config['input']['vcf_directory'])
     output:
         fname = 'data/vcf_data.csv'
-    run:
-        import os
+    scripts:
+        'scripts/get_base_freqs.py'
 
-        import numpy as np
-        import pandas as pd
 
-        import vcf
+rule plot_heatmaps:
+    input:
+        fname = 'data/vcf_data.csv',
+        fname_genes = srcdir('references/genes.csv')
+    output:
+        outdir = directory('plots/heatmaps/')
+    script:
+        'scripts/covid_heatmaps.R'
 
-        tmp = []
-        for entry in os.scandir(input.vcf_dir):
-            if not entry.name.endswith('.vcf'):
-                continue
 
-            with open(entry.path) as fd:
-                vcf_reader = vcf.Reader(fd)
-                for record in vcf_reader:
-
-                    tmp.append({
-                        'vcf': entry.name.split('_')[1].split('.')[0],
-                        'chromosome': record.CHROM,
-                        'position': record.POS,
-                        'reference': record.REF,
-                        'variant': [v.sequence for v in record.ALT],
-                        'frequency': round(np.mean(
-                            [v for k, v in record.INFO.items() if k.startswith("Freq")]
-                        ), 3),
-                        'posterior': round(1 - 10**(-record.QUAL / 10), 3)
-                    })
-
-        df = pd.DataFrame(tmp)
-        df.to_csv(output.fname, index=False)
+rule plot_histograms:
+    input:
+        fname = 'data/vcf_data.csv'
+    output:
+        entropy_samples_fname = 'results/log_entropy_samples.csv',
+        entropy_positions_fname = 'results/log_entropy_positions.csv',
+        outdir = directory('plots/histograms/')
+    script:
+        'scripts/covid_histograms.R'
