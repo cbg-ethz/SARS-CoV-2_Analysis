@@ -16,7 +16,7 @@ rule gather_vcf_files:
         vcf_dir = srcdir(config['input']['vcf_directory'])
     output:
         fname = 'data/vcf_data.csv'
-    scripts:
+    script:
         'scripts/get_base_freqs.py'
 
 
