@@ -7,7 +7,8 @@ localrules: all
 rule all:
     input:
         'plots/heatmaps/',
-        'plots/histograms/'
+        'plots/histograms/',
+        'plots/snv_coverage_plot.pdf'
 
 
 rule gather_vcf_files:
@@ -38,3 +39,16 @@ rule plot_histograms:
         outdir = directory('plots/histograms/')
     script:
         'scripts/covid_histograms.R'
+
+
+rule snv_coverage_plot:
+    input:
+        fname_coverage = srcdir(config['input']['snv_coverage_plot']['coverage']),
+        fname_vcf = srcdir(config['input']['snv_coverage_plot']['vcf']),
+        fname_genes = srcdir('references/genes.csv')
+    output:
+        fname = 'plots/snv_coverage_plot.pdf'
+    params:
+        sample_accession = config['input']['snv_coverage_plot']['accession']
+    script:
+        'scripts/snv_coverage_plot.py'
