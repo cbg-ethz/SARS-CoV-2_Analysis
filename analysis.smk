@@ -41,6 +41,16 @@ rule plot_histograms:
         'scripts/covid_histograms.R'
 
 
+rule compute_regression:
+    input:
+        covariates_fname = srcdir(config['input']['covariates']),
+        entropy_samples_fname = 'results/log_entropy_samples.csv'
+    output:
+        lm_summary_fname = 'regression/lm_summary.txt'
+    script:
+        'scripts/covid_regression.R'
+
+
 rule snv_coverage_plot:
     input:
         fname_coverage = srcdir(config['input']['snv_coverage_plot']['coverage']),
