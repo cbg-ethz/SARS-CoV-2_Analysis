@@ -45,7 +45,7 @@ fileList = glob.glob(pattern)
 usedFiles = 0
 for file in fileList:
 	countMuts = 0
-	sampleName = file.split('/')[2]
+	sampleName = os.path.basename(file)
 	if sampleName.endswith('.vcf'):
 		sampleName  = sampleName[:-4]   # remove file extension to get sample name
 	if sampleName.startswith('snvs_'):
