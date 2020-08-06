@@ -58,7 +58,7 @@ find_gene <- function(x, gene_pos_df) {
   start_row <- max(c(0, which(gene_pos_df$start <= as.numeric(x))))
   end_row <- min(c(which(gene_pos_df$end >= as.numeric(x)), nrow(gene_pos_df) + 1))
   if (start_row == end_row) {
-    #as.character(gene_pos_df$gene[start_row])
+    #as.character(gene_pos_df$gene_name[start_row])
     start_row
   } else {
     NA
@@ -84,7 +84,7 @@ column_ha <- HeatmapAnnotation(gene = local_genes,
                                annotation_legend_param = list(
                                  gene = list(color_bar = "discrete",
                                              at = 11:1,
-                                             labels = rev(as.character(gene_pos_df$gene)),
+                                             labels = rev(as.character(gene_pos_df$gene_name)),
                                              title = "\ngene",
                                              labels_gp = gpar(fontsize = 8),
                                              title_gp = gpar(fontsize = 10))
