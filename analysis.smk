@@ -8,7 +8,8 @@ rule all:
     input:
         'plots/heatmaps/',
         'plots/histograms/',
-        'plots/snv_coverage_plot.pdf'
+        'plots/snv_coverage_plot.pdf',
+        'results/top_bases_extended.txt'
 
 
 rule gather_vcf_files:
@@ -62,3 +63,26 @@ rule snv_coverage_plot:
         sample_accession = config['input']['snv_coverage_plot']['accession']
     script:
         'scripts/snv_coverage_plot.py'
+
+
+rule compute_top_positions:
+    input:
+        fname_entropy_positions = 'results/log_entropy_positions.csv',
+        fname_genes = srcdir('references/genes.csv')
+    output:
+        fname_top_deletions = 'results/top_deletions.txt',
+        fname_top_bases = 'results/top_bases.txt',
+        fname_av_top_positions_pdf = 'plots/av_top_positions.pdf',
+        fname_av_top_positions_png = 'plots/av_top_positions.png'
+    script:
+        'scripts/covid_gene_av.R'
+
+
+rule generate_extended_top_positions_table:
+    input:
+        fname_top_bases = 'results/top_bases.txt',
+        fname_vcf = 'data/vcf_data.csv'
+    output:
+        fname = 'results/top_bases_extended.txt'
+    script:
+        'scripts/covid_top_positions_extended_table.R'
