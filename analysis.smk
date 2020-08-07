@@ -9,7 +9,8 @@ rule all:
         'plots/heatmaps/',
         'plots/histograms/',
         'plots/snv_coverage_plot.pdf',
-        'results/top_bases_extended.txt'
+        'results/top_bases_extended.txt',
+        'results/top_samples_extended.txt'
 
 
 rule gather_vcf_files:
@@ -86,3 +87,13 @@ rule generate_extended_top_positions_table:
         fname = 'results/top_bases_extended.txt'
     script:
         'scripts/covid_top_positions_extended_table.R'
+
+
+rule generate_extended_top_samples_table:
+    input:
+        fname_entropy_samples = 'results/log_entropy_samples.csv',
+        fname_vcf = 'data/vcf_data.csv'
+    output:
+        fname = 'results/top_samples_extended.txt'
+    script:
+        'scripts/covid_top_samples_extended.R'
