@@ -2,11 +2,11 @@
 library(tidyverse)
 
 # read data
-covid_ENT <- read.csv(snakemake@input$entropy_samples_fname)
+covid_ENT <- read.csv(snakemake@input$fname_entropy_samples)
 # rename columns
 colnames(covid_ENT) <- c("accession", "log_ent")
 
-covid_covariates <- read.csv(snakemake@input$covariates_fname)
+covid_covariates <- read.csv(snakemake@input$fname_covariates)
 
 covid_covariates %>% unite(country, c(geo_loc_name_country, geographic_location_.country_and.or_sea.), sep = "") %>%
   mutate(log_count = log(per_base_read_count_median),
@@ -51,6 +51,6 @@ summary(covid_lm)
 #covid_lm %>% ggplot(aes(x = .fitted, y = .resid)) +
 #  geom_point(aes(colour = log_count), size = 2)
 
-sink(snakemake@output$lm_summary_fname)
+sink(snakemake@output$fname_lm_summary)
 summary(covid_lm)
 sink()

@@ -34,8 +34,8 @@ rule plot_histograms:
     input:
         fname = 'data/vcf_data.csv'
     output:
-        entropy_samples_fname = 'results/log_entropy_samples.csv',
-        entropy_positions_fname = 'results/log_entropy_positions.csv',
+        fname_entropy_samples = 'results/log_entropy_samples.csv',
+        fname_entropy_positions = 'results/log_entropy_positions.csv',
         outdir = directory('plots/histograms/')
     script:
         'scripts/covid_histograms.R'
@@ -43,10 +43,10 @@ rule plot_histograms:
 
 rule compute_regression:
     input:
-        covariates_fname = srcdir(config['input']['covariates']),
-        entropy_samples_fname = 'results/log_entropy_samples.csv'
+        fname_covariates = srcdir(config['input']['covariates']),
+        fname_entropy_samples = 'results/log_entropy_samples.csv'
     output:
-        lm_summary_fname = 'regression/lm_summary.txt'
+        fname_lm_summary = 'regression/lm_summary.txt'
     script:
         'scripts/covid_regression.R'
 

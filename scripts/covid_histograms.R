@@ -37,7 +37,7 @@ row.names(covid_ent_mat) <- covid_ent_wide[, 1]
 rowSums(covid_ent_mat) %>% log %>% data.frame(LOG_ENT = .) %>%
   rownames_to_column("ID") -> log_ent_samples_df
 
-log_ent_samples_df %>% write.csv(snakemake@output$entropy_samples_fname, row.names = FALSE)
+log_ent_samples_df %>% write.csv(snakemake@output$fname_entropy_samples, row.names = FALSE)
 
 log_ent_samples_df %>% ggplot(aes(x = LOG_ENT, y = ..density..)) +
     theme_bw() + theme(text = element_text(size = 16)) +
@@ -57,7 +57,7 @@ log_ent_samples_df %>% mutate(ENT = exp(LOG_ENT)) %>%
 colSums(covid_ent_mat) %>% log %>% data.frame(LOG_ENT = .) %>%
   rownames_to_column("POS") -> log_ent_positions_df
 
-log_ent_positions_df %>% write.csv(snakemake@output$entropy_positions_fname, row.names = FALSE)
+log_ent_positions_df %>% write.csv(snakemake@output$fname_entropy_positions, row.names = FALSE)
 
 log_ent_positions_df %>% ggplot(aes(x = LOG_ENT, y = ..density..)) +
     theme_bw() + theme(text = element_text(size = 16)) +
