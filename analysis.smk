@@ -8,6 +8,7 @@ rule all:
     input:
         'plots/heatmaps/',
         'plots/histograms/',
+        'plots/mutation_histograms/',
         'plots/snv_coverage_plot.pdf',
         'results/top_bases_extended.txt',
         'results/top_samples_extended.txt'
@@ -41,6 +42,16 @@ rule plot_histograms:
         outdir = directory('plots/histograms/')
     script:
         'scripts/covid_histograms.R'
+
+
+rule plot_mutation_histograms:
+    input:
+        fname_vcf = 'data/vcf_data.csv'
+    output:
+        fname = 'results/mut_samples.csv',
+        outdir = directory('plots/mutation_histograms/')
+    script:
+        'scripts/covid_histogram_mut.R'
 
 
 rule compute_regression:
