@@ -309,6 +309,9 @@ rule plot_coverage_per_locus:
         df_sub = df[sel]
 
         df_genes = pd.read_csv('references/genes.csv')
+        df_primers = pd.read_csv(
+            'references/nCoV-2019.bed', sep='\t', header=None,
+            names=['chrom', 'chromStart', 'chromEnd', 'name', 'foo', 'strand'])
 
         # compute data statistics
         df_stats = pd.DataFrame({
@@ -363,6 +366,11 @@ rule plot_coverage_per_locus:
         ax_coverage.set_ylabel('Per base read count')
 
         ax_coverage.legend(loc='best')
+
+        # primers
+        for row in df_primers.itertuples():
+            pos_mean = (row.chromStart + row.chromEnd) / 2
+            ax_coverage.axvline(pos_mean, 0, .04, color='black', lw=.2)
 
         fig.tight_layout()
         fig.savefig(output.fname)
