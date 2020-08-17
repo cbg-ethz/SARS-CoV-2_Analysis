@@ -320,6 +320,14 @@ rule plot_coverage_per_locus:
             'upper quartile': df_sub.quantile(q=.75, axis=1)
         })
 
+        # prepare primers
+        df_primers_sub = df_primers[~df_primers['name'].str.contains('alt')].copy()
+        df_primers_sub['primer_id'] = df_primers_sub['name'].str.split('_').str[:2].str.join('_')
+        df_pos = pd.DataFrame({
+            'start': df_primers_sub.groupby('primer_id')['chromStart'].min(),
+            'end': df_primers_sub.groupby('primer_id')['chromEnd'].max()
+        })
+
         # plot data
         fig, (ax_genes, ax_coverage) = plt.subplots(
             nrows=2, ncols=1,
@@ -368,9 +376,9 @@ rule plot_coverage_per_locus:
         ax_coverage.legend(loc='best')
 
         # primers
-        for row in df_primers.itertuples():
-            pos_mean = (row.chromStart + row.chromEnd) / 2
-            ax_coverage.axvline(pos_mean, 0, .04, color='black', lw=.2)
+        for row in df_pos.sort_values('start').itertuples():
+            ax_coverage.axvline(row.start, 0, .04, color='black', lw=1, ls='solid')
+            ax_coverage.axvline(row.end, 0, .04, color='black', lw=1, ls='dashed')
 
         fig.tight_layout()
         fig.savefig(output.fname)
