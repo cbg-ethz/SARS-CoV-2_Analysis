@@ -11,7 +11,7 @@ covid_covariates <- read.csv(snakemake@input$fname_covariates)
 covid_covariates %>% unite(country, c(geo_loc_name_country, geographic_location_.country_and.or_sea.), sep = "") %>%
   mutate(log_count = log(per_base_read_count_median),
          log_IQR = log(per_base_read_count_upper_quartile - per_base_read_count_lower_quartile) - log_count) %>%
-  select(accession, country, host_sex, host_age, sample_type,
+  select(accession, SRAStudy, country, host_sex, host_age, sample_type,
          Assay.Type, LibrarySelection, log_count, log_IQR) -> covid_cov_sel
 
 # select data with sex information
@@ -35,6 +35,9 @@ covid_cov_sel %>% pull(Assay.Type) %>% table
 
 # select sequencing type with reasonable numbers
 covid_cov_sel %>% pull(LibrarySelection) %>% table
+
+# select sequencing type with reasonable numbers
+covid_cov_sel %>% pull(SRAStudy) %>% table
 
 # add entropy information to dataframe
 covid_cov_sel %>% left_join(covid_ENT) -> covid_df
