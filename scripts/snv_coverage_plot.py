@@ -79,6 +79,7 @@ def main(fname_coverage, fname_snv, accession, fname_genes, fname_output):
     ax_coverage.fill_between(df_coverage.index, df_coverage[f'{accession}-19700101'], alpha=0.3, color='#88bae3')
     ax_coverage.set_ylabel('Coverage', color='#88bae3')
     ax_coverage.tick_params(axis='y', labelcolor='#88bae3')
+    ax_coverage.set_ylim(bottom=0)
 
     ax_vcf.stem(
         df_vcf['position'], df_vcf['frequency'],
@@ -87,6 +88,7 @@ def main(fname_coverage, fname_snv, accession, fname_genes, fname_output):
     ax_vcf.set_xlabel('Genomic position [bp]')
     ax_vcf.set_ylabel('SNV frequency', color='k')
     ax_vcf.tick_params(axis='y', labelcolor='k')
+    ax_vcf.set_ylim(bottom=0)
 
     plt.tight_layout()
     plt.savefig(fname_output)
