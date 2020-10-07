@@ -20,3 +20,7 @@ $ ./run_vpipe.sh
 $ python gather_vcf_files.py
 $ ./run_analysis.sh
 ```
+
+## Notes
+
+The accession numbers of all samples used in our analyses can be found in `./assets`.
