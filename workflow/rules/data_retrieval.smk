@@ -1,6 +1,3 @@
-# configfile: 'data_retrieval.config.yaml'
-# workdir: config['workdir']
-
 localrules: all
 
 

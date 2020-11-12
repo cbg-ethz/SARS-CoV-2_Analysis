@@ -1,5 +1,3 @@
-workdir: pipeline_run_retrieval
-
 thresholds:
     median_minium: 1000
     quartile_range: [100, 10000]

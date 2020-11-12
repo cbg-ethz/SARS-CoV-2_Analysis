@@ -1,6 +1,3 @@
-# configfile: 'analysis.config.yaml'
-# workdir: config['workdir']
-
 localrules: all
 
 
@@ -16,7 +13,7 @@ rule all:
 
 rule gather_vcf_files:
     input:
-        vcf_dir = '../TESTING_VP/vcf_PE'
+        vcf_dir = '../../results/pipeline_run__vpipe_wrapper/vcf_PE'
     output:
         fname = 'data/vcf_data.csv'
     script:

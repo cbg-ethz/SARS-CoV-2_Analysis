@@ -1,7 +1,7 @@
 # TODO: can we assume that the subworkflow order will always be kept?
 subworkflow data_retrieval:
     workdir:
-        'TESTING_DR'
+        '../results/pipeline_run__data_retrieval'
     snakefile:
         'rules/data_retrieval.smk'
     configfile:
@@ -10,7 +10,7 @@ subworkflow data_retrieval:
 
 subworkflow vpipe_wrapper:
     workdir:
-        'TESTING_VP'
+        '../results/pipeline_run__vpipe_wrapper'
     snakefile:
         'rules/vpipe_wrapper.smk'
     configfile:
@@ -19,7 +19,7 @@ subworkflow vpipe_wrapper:
 
 subworkflow visualize_results:
     workdir:
-        'TESTING_VR'
+        '../results/pipeline_run__visualize_results'
     snakefile:
         'rules/visualize_results.smk'
     configfile:

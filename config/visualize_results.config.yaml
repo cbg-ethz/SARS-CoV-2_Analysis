@@ -1,12 +1,10 @@
-workdir: pipeline_run_analysis
-
 input:
     vcf_directory: vcf_PE
-    covariates: ../TESTING_DR/results/final_dataframe.csv
+    covariates: ../../results/pipeline_run__data_retrieval/results/final_dataframe.csv
     snv_coverage_plot:
         accession: SRR11953858
-        coverage: ../TESTING_VP/variants/coverage.tsv
-        vcf: ../TESTING_VP/vcf_PE/snvs_SRR11953858.vcf
+        coverage: ../../results/pipeline_run__vpipe_wrapper/variants/coverage.tsv
+        vcf: ../../results/pipeline_run__vpipe_wrapper/vcf_PE/snvs_SRR11953858.vcf
 
 params:
     deletion_threshold: 0.005

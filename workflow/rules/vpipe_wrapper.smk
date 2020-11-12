@@ -4,7 +4,7 @@ from pathlib import Path
 
 # prepare V-pipe environment
 vpipe_dir = Path('../rules/V-pipe/')
-shutil.copy('../../config/vpipe.config', './vpipe.config')
+shutil.copy(config['vpipe_config_path'], './vpipe.config')
 
 VPIPE_BASEDIR = Path(workflow.basedir) / 'V-pipe'
 include: vpipe_dir / 'vpipe.snake'
@@ -38,7 +38,7 @@ rule gather_vcf_files:
         target_dir.mkdir(parents=True, exist_ok=True)
 
         for fname in fname_list:
-            accession = fname.split('/')[4]
+            accession = fname.split('/')[-5]
             name_new = Path(fname).name.replace('.vcf', f'_{accession}.vcf')
 
             print(fname, target_dir / name_new)
