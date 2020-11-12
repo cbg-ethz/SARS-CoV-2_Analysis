@@ -39,7 +39,7 @@ def convert_vcf(fname):
     return pd.DataFrame(tmp)
 
 
-def main(fname_coverage, fname_snv, accession, fname_genes, fname_output):
+def main(fname_coverage, fname_snv, accession, snv_highlights, fname_genes, fname_output):
     # read data
     df_coverage = pd.read_csv(fname_coverage, sep='\t')
     df_vcf = convert_vcf(fname_snv)
@@ -51,7 +51,7 @@ def main(fname_coverage, fname_snv, accession, fname_genes, fname_output):
         nrows=2, ncols=1,
         gridspec_kw={'height_ratios': [1, 5]},
         sharex=True,
-        figsize=(10, 6))
+        figsize=(10, 5))
 
     # genes
     features = df_genes.apply(
@@ -90,6 +90,14 @@ def main(fname_coverage, fname_snv, accession, fname_genes, fname_output):
     ax_vcf.tick_params(axis='y', labelcolor='k')
     ax_vcf.set_ylim(bottom=0)
 
+    for pos, name in snv_highlights:
+        freq = df_vcf.loc[df_vcf['position'] == pos, 'frequency'].iloc[0]
+        ax_vcf.annotate(
+            name,
+            xy=(pos, freq), xytext=(pos - 3000, freq),
+            arrowprops=dict(arrowstyle='->')
+        )
+
     plt.tight_layout()
     plt.savefig(fname_output)
 
@@ -99,5 +107,6 @@ if __name__ == '__main__':
         snakemake.input.fname_coverage,
         snakemake.input.fname_vcf,
         snakemake.params.sample_accession,
+        snakemake.params.snv_highlights,
         snakemake.input.fname_genes,
         snakemake.output.fname)

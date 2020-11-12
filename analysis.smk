@@ -72,7 +72,8 @@ rule snv_coverage_plot:
     output:
         fname = 'plots/snv_coverage_plot.pdf'
     params:
-        sample_accession = config['input']['snv_coverage_plot']['accession']
+        sample_accession = config['input']['snv_coverage_plot']['accession'],
+        snv_highlights = [(23403, 'D614G')]
     script:
         'scripts/snv_coverage_plot.py'
 
