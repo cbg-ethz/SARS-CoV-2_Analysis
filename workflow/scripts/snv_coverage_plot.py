@@ -91,6 +91,11 @@ def main(fname_coverage, fname_snv, accession, snv_highlights, fname_genes, fnam
     ax_vcf.set_ylim(bottom=0)
 
     for pos, name in snv_highlights:
+        match = df_vcf.loc[df_vcf['position'] == pos, 'frequency']
+        if match.empty:
+            print(f'Warning: SNV higlight "{pos} {name}" does not exist, skipping...')
+            continue
+
         freq = df_vcf.loc[df_vcf['position'] == pos, 'frequency'].iloc[0]
         ax_vcf.annotate(
             name,

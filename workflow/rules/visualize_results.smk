@@ -1,5 +1,5 @@
-configfile: 'analysis.config.yaml'
-workdir: config['workdir']
+# configfile: 'analysis.config.yaml'
+# workdir: config['workdir']
 
 localrules: all
 
@@ -16,11 +16,11 @@ rule all:
 
 rule gather_vcf_files:
     input:
-        vcf_dir = srcdir(config['input']['vcf_directory'])
+        vcf_dir = '../TESTING_VP/vcf_PE'
     output:
         fname = 'data/vcf_data.csv'
     script:
-        'scripts/get_base_freqs.py'
+        '../scripts/get_base_freqs.py'
 
 
 rule plot_heatmaps:
@@ -30,7 +30,7 @@ rule plot_heatmaps:
     output:
         outdir = directory('plots/heatmaps/')
     script:
-        'scripts/covid_heatmaps.R'
+        '../scripts/covid_heatmaps.R'
 
 
 rule plot_histograms:
@@ -41,7 +41,7 @@ rule plot_histograms:
         fname_entropy_positions = 'results/log_entropy_positions.csv',
         outdir = directory('plots/histograms/')
     script:
-        'scripts/covid_histograms.R'
+        '../scripts/covid_histograms.R'
 
 
 rule plot_mutation_histograms:
@@ -51,7 +51,7 @@ rule plot_mutation_histograms:
         fname = 'results/mut_samples.csv',
         outdir = directory('plots/mutation_histograms/')
     script:
-        'scripts/covid_histogram_mut.R'
+        '../scripts/covid_histogram_mut.R'
 
 
 rule compute_regression:
@@ -61,21 +61,21 @@ rule compute_regression:
     output:
         fname_lm_summary = 'regression/lm_summary.txt'
     script:
-        'scripts/covid_regression.R'
+        '../scripts/covid_regression.R'
 
 
 rule snv_coverage_plot:
     input:
         fname_coverage = srcdir(config['input']['snv_coverage_plot']['coverage']),
         fname_vcf = srcdir(config['input']['snv_coverage_plot']['vcf']),
-        fname_genes = srcdir('references/genes.csv')
+        fname_genes = srcdir('../../resources/references/genes.csv')
     output:
         fname = 'plots/snv_coverage_plot.pdf'
     params:
         sample_accession = config['input']['snv_coverage_plot']['accession'],
         snv_highlights = [(23403, 'D614G')]
     script:
-        'scripts/snv_coverage_plot.py'
+        '../scripts/snv_coverage_plot.py'
 
 
 rule compute_top_positions:
@@ -88,7 +88,7 @@ rule compute_top_positions:
         fname_av_top_positions_pdf = 'plots/av_top_positions.pdf',
         fname_av_top_positions_png = 'plots/av_top_positions.png'
     script:
-        'scripts/covid_gene_av.R'
+        '../scripts/covid_gene_av.R'
 
 
 rule generate_extended_top_positions_table:
@@ -98,7 +98,7 @@ rule generate_extended_top_positions_table:
     output:
         fname = 'results/top_bases_extended.txt'
     script:
-        'scripts/covid_top_positions_extended_table.R'
+        '../scripts/covid_top_positions_extended_table.R'
 
 
 rule generate_extended_top_samples_table:
@@ -108,4 +108,4 @@ rule generate_extended_top_samples_table:
     output:
         fname = 'results/top_samples_extended.txt'
     script:
-        'scripts/covid_top_samples_extended.R'
+        '../scripts/covid_top_samples_extended.R'

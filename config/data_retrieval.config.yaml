@@ -4,7 +4,7 @@ thresholds:
     median_minium: 1000
     quartile_range: [100, 10000]
 
-reference: references/NC_045512.2.fasta
+reference: resources/references/NC_045512.2.fasta
 
 sample_accessions:
     - SRR11278091
