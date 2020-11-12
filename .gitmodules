@@ -1,4 +1,4 @@
 [submodule "V-pipe"]
-	path = V-pipe
+	path = workflow/rules/V-pipe
 	url = https://github.com/cbg-ethz/V-pipe
 	branch = sars-cov2
