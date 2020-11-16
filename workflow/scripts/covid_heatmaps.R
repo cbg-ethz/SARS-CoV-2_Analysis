@@ -1,20 +1,20 @@
 
+ent_div <- FALSE # flag for diversity or entropy
+
 ### Select positions that appear more than k times
 # and proportion of x labels (position) to keep with keep_frac
-#k <- 196 # 5%, c. 700 positions
-#keep_frac <- 15
-k <- 157 # 4%, c. 1k positions
-keep_frac <- 20
-#k <- 118 # 3%, c 2k positions
-#keep_frac <- 40
-#k <- 78 # 2%, c 4k positions
-#keep_frac <- 80
-#k <- 39 # 1%, c. 10k positions
-#keep_frac <- 160
+
+k <- 29 # 4%, c. 1k positions
+keep_frac <- 5
 
 # entropy function
 Entropy <- function(v) {
   ifelse(v==0, 0, -v*log(v))
+}
+
+# diversity function
+Diversity <- function(v, n) {
+  v*(v*n - 1)/(n - 1)
 }
 
 ### Process data
@@ -24,10 +24,43 @@ library(tidyverse)
 file_append <- paste0("_", k)
 # read data
 covid_table <- read.table(snakemake@input$fname, header = TRUE)
+
+covid_samples <- read.csv(snakemake@input$fname_covariates) %>%
+  filter(X50. > 1000) %>% filter(X25. > 100) %>% filter(X75. < 10000) %>%
+  pull(X.1)
+
+split_accession <- function(x) {
+  str_split(x, "__")[[1]][1]
+}
+
+covid_table$SAMPLE <- sapply(covid_table$SAMPLE, split_accession)
+
+# filter out low coverage
+
+covid_table %>% filter(SAMPLE %in% covid_samples) -> covid_table
+
+# filter out plus
+
+find_plus <- function(x) {
+  any(str_split(x, "_")[[1]] == "plus")
+}
+
+covid_table$PLUS <- sapply(covid_table$SAMPLE, find_plus)
+
+covid_table %>% filter(PLUS == FALSE) -> covid_table
+
+if (ent_div) {
 # add entropy
 covid_table %>% mutate(ENT = Entropy(A_freq) + Entropy(C_freq) +
                            Entropy(G_freq) + Entropy(T_freq) +
                            Entropy(DEL_freq)) -> covid_table
+} else {
+# add diversity
+covid_table %>% mutate(N = X.ADJUSTED_.READ_COUNT,
+                       ENT = 1 - Diversity(A_freq, N) - Diversity(C_freq, N) -
+                         Diversity(G_freq, N) - Diversity(T_freq, N) -
+                         Diversity(DEL_freq, N)) -> covid_table
+}
 
 covid_table %>% group_by(POS) %>%
   summarise(n = n()) %>% filter(n > k) %>%
@@ -50,6 +83,12 @@ covid_table_sel %>% select(SAMPLE, POS, ENT) %>%
 covid_ent_mat <- as.matrix(covid_ent_wide[, -1])
 row.names(covid_ent_mat) <- covid_ent_wide[, 1]
 
+if (ent_div) {
+  save(covid_ent_mat, file = file.path(snakemake@output$outdir, "./data/covid_ent_mat_Basel.rData"))
+} else {
+  save(covid_ent_mat, file = file.path(snakemake@output$outdir, "./data/covid_div_mat_Basel.rData"))
+}
+
 ### Read in gene positions
 
 gene_pos_df <- read.csv(snakemake@input$fname_genes)
@@ -70,7 +109,15 @@ find_gene <- function(x, gene_pos_df) {
 library(ComplexHeatmap)
 library(circlize)
 
-col_fun = colorRamp2(c(0, 0.1, 1), c("white", "#2094c8", "#2040C8"), space = "RGB")
+if (ent_div) {
+  col_fun = colorRamp2(c(0, 0.16, 1.6), c("white", "#2094c8", "#2040C8"), space = "RGB")
+  measure_name <- "entropy"
+  at_scale <- 0.4
+} else {
+  col_fun = colorRamp2(c(0, 0.08, 0.8), c("white", "#9420c8", "#4020C8"), space = "RGB")
+  measure_name <- "diversity"
+  at_scale <- 0.2
+}
 col_fun2 = colorRamp2(1:11, RColorBrewer::brewer.pal(11, "Spectral"), space = "RGB")
 
 local_names <- colnames(covid_ent_mat)
@@ -95,26 +142,35 @@ if (keep_frac > 1) {
   local_names[which(1:length(local_names)%% keep_frac != 0)] <- ""
 }
 
-hm_ent <- Heatmap(covid_ent_mat, name = "entropy", col = col_fun,
+colnames(covid_ent_mat) <- local_names
+
+hm_ent <- Heatmap(covid_ent_mat, name = measure_name, col = col_fun,
         row_title = "sample", column_title_side = "bottom",
         show_row_names = FALSE,
         #show_column_names = FALSE,
-        column_labels = local_names,
+        #column_labels = local_names,
         column_names_gp = gpar(fontsize = 8),
         column_title = "position", cluster_rows = TRUE, cluster_columns = FALSE,
         bottom_annotation = column_ha,
-        heatmap_legend_param = list(title = "entropy",
+        heatmap_legend_param = list(title = measure_name,
+                                    at = c(0:4)*at_scale,
                                     labels_gp = gpar(fontsize = 10),
                                     title_gp = gpar(fontsize = 10)),
         use_raster = TRUE,
         raster_device = "png"
   )
 
-ht_opt("TITLE_PADDING" = unit(1.5, "mm"))
+#ht_opt("TITLE_PADDING" = unit(1.5, "mm"))
 
-png(file.path(snakemake@output$outdir, paste0("heatmap_entropy", file_append, ".png")), width = 8, height = 4, units = "in", res = 300)
+if (ent_div) {
+png(file.path(snakemake@output$outdir, paste0("./figures/heatmap_entropy_basel", file_append, ".png")), width = 8, height = 4, units = "in", res = 300)
   draw(hm_ent, padding = unit(c(0, 0, 1, 1), "mm"), merge_legend = TRUE)
 dev.off()
-#pdf(file.path(snakemake@output$outdir, paste0("heatmap_entropy", file_append, ".pdf")), width = 8, height = 4)
+} else {
+  png(file.path(snakemake@output$outdir, paste0("./figures/heatmap_diversity_basel", file_append, ".png")), width = 8, height = 4, units = "in", res = 300)
+  draw(hm_ent, padding = unit(c(0, 0, 1, 1), "mm"), merge_legend = TRUE)
+  dev.off()
+}
+#pdf(file.path(snakemake@output$outdir, paste0("./figures/heatmap_entropy", file_append, ".pdf")), width = 8, height = 4)
 #  draw(hm_ent, merge_legend = TRUE)
 #dev.off()

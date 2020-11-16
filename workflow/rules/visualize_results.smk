@@ -23,7 +23,8 @@ rule gather_vcf_files:
 rule plot_heatmaps:
     input:
         fname = 'data/vcf_data.csv',
-        fname_genes = srcdir('references/genes.csv')
+        fname_genes = srcdir('references/genes.csv'),
+        fname_covariates = srcdir(config['input']['covariates'])
     output:
         outdir = directory('plots/heatmaps/')
     script:
