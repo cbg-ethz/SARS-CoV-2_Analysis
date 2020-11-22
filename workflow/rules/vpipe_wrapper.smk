@@ -15,11 +15,6 @@ rule all_butforrealthistime:
         all_files
 
 
-rule fubar:
-    output:
-        touch('SRR11278091/visualization/index.html')
-
-
 rule gather_vcf_files:
     input:
         fname_list = [fname for fname in all_files if fname[-8:] == 'snvs.vcf']
