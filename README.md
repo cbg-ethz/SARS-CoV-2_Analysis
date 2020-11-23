@@ -8,7 +8,7 @@ First, clone the repository:
 $ git clone --recurse-submodules https://github.com/cbg-ethz/SARS-CoV-2_Analysis
 ```
 
-The whole analysis can then be reproduced by executing the following line (for paired-end reads only):
+The whole analysis can then be reproduced by executing the following line:
 
 ```bash
 $ ./run_pipeline.sh

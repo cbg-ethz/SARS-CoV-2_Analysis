@@ -8,13 +8,22 @@ subworkflow data_retrieval:
         'config/data_retrieval.config.yaml'
 
 
-subworkflow vpipe_wrapper:
+subworkflow vpipe_wrapper_SE:  # V-pipe run for single-end reads
     workdir:
-        '../results/pipeline_run__vpipe_wrapper'
+        '../results/pipeline_run__vpipe_wrapper_SE'
     snakefile:
         'rules/vpipe_wrapper.smk'
     configfile:
-        'config/vpipe_wrapper.config.yaml'
+        'config/vpipe_wrapper_se.config.yaml'
+
+
+subworkflow vpipe_wrapper_PE:  # V-pipe run for paired-end reads
+    workdir:
+        '../results/pipeline_run__vpipe_wrapper_PE'
+    snakefile:
+        'rules/vpipe_wrapper.smk'
+    configfile:
+        'config/vpipe_wrapper_pe.config.yaml'
 
 
 subworkflow visualize_results:
@@ -29,6 +38,7 @@ subworkflow visualize_results:
 rule all:
     input:
         data_retrieval('processed_fastq_data'),
-        vpipe_wrapper('vcf_PE'),
+        vpipe_wrapper_SE('vcf_files'),
+        vpipe_wrapper_PE('vcf_files'),
         visualize_results('results/top_samples_extended.txt'),
         visualize_results('plots/snv_coverage_plot.pdf')

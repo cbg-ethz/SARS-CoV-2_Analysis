@@ -2,9 +2,9 @@
 aligner = bwa
 
 [input]
-datadir = ../../results/pipeline_run__data_retrieval/processed_fastq_data/samples_PE
-samples_file = ../../results/pipeline_run__data_retrieval/processed_fastq_data/samples_PE.tsv
-paired = true
+datadir = {DATADIR}
+samples_file = {SAMPLES_FILE}
+paired = {PAIRED}
 
 fastq_suffix =
 reference = ../../references/NC_045512.2.fasta

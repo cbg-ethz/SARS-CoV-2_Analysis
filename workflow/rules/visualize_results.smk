@@ -11,9 +11,30 @@ rule all:
         'results/top_samples_extended.txt'
 
 
+rule combine_se_pe_vcfs:
+    input:
+        vcf_dir_SE = '../../results/pipeline_run__vpipe_wrapper_SE/vcf_files',
+        vcf_dir_PE = '../../results/pipeline_run__vpipe_wrapper_PE/vcf_files'
+    output:
+        dname = directory('data/vcf_files')
+    run:
+        import os
+        import shutil
+
+        se_files = list(os.scandir(input.vcf_dir_SE))
+        pe_files = list(os.scandir(input.vcf_dir_PE))
+        all_files = se_files + pe_files
+
+        os.makedirs(output.dname)
+        for entry in all_files:
+            if not entry.name.endswith('.vcf'):
+                continue
+            shutil.copy(entry, f'{output.dname}/{entry.name}')
+
+
 rule gather_vcf_files:
     input:
-        vcf_dir = '../../results/pipeline_run__vpipe_wrapper/vcf_PE'
+        vcf_dir = 'data/vcf_files'
     output:
         fname = 'data/vcf_data.csv'
     script:
