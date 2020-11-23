@@ -49,12 +49,12 @@ rule download_fastq:
     # group: 'data_processing'
     run:
         import os
-        import glob
         import time
         import subprocess
+        from pathlib import Path
 
-        outdir = os.path.dirname(output.fname_marker)
-        tmpdir = os.path.join(outdir, f'tmp.{wildcards.accession}')
+        outdir = Path(os.path.dirname(output.fname_marker))
+        tmpdir = Path(os.path.join(outdir, f'tmp.{wildcards.accession}'))
 
         counter = 0
         while True:
@@ -67,7 +67,7 @@ rule download_fastq:
                 time.sleep(100)
 
             # make sure the files were actually created
-            available_files = glob.glob(f'data/{wildcards.accession}*.fastq')
+            available_files = list(outdir.glob(f"{wildcards.accession}*.fastq"))
             if len(available_files) in (1, 2, 3):
                 # downloaded SE, PE, varying read number per spot
                 break
