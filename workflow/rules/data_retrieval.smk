@@ -95,7 +95,7 @@ rule vpipe_trim:
         mem_mb = 10_000
     # group: 'data_processing'
     conda:
-        '../../envs/preprocessing.yaml'
+        '../envs/preprocessing.yaml'
     shell:
         """
         echo "The length cutoff is: {params.len_cutoff}" >> {log.outfile}
