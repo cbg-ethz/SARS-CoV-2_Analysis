@@ -456,33 +456,51 @@ rule retrieve_sra_metadata:
     output:
         fname = 'results/sra_metadata.csv'
     run:
-        import io
-        import subprocess
-
         import pandas as pd
         from tqdm import tqdm
 
+        from pysradb.sraweb import SRAweb
+
+        # chunks are necessary because `SRAweb` crashes otherwise
+        chunk_size = 200
+
+        def chunker(seq, size):
+            return list(seq[pos:pos + size] for pos in range(0, len(seq), size))
+
+        # query SRA
+        db = SRAweb()
+
         df_list = []
-        for accession in tqdm(accession_list):
-            proc = subprocess.Popen(
-                ['esearch', '-db', 'sra', '-query', accession],
-                stdout=subprocess.PIPE)
-            proc_stdout = subprocess.check_output(
-                ['efetch', '-format', 'runinfo'],
-                stdin=proc.stdout)
-            proc.wait()
+        for sub_list in tqdm(chunker(accession_list, chunk_size)):
+            while True:  # save us from network issues
+                try:
+                    tmp = db.sra_metadata(sub_list, detailed=True)
+                    df_list.append(tmp)
+                    break
+                except KeyError:
+                    print('Woopsie starting with', sub_list[0])
+                    continue
 
-            buf = io.StringIO(proc_stdout.decode('utf-8'))
-            df_cur = pd.read_csv(buf)
+        df_meta = pd.concat(df_list)
+        assert df_meta['run_accession'].tolist() == accession_list
 
-            df_sel = df_cur[df_cur['Run'] == accession]
-            assert df_sel.shape[0] == 1
+        # engineer additional features
+        assert 'location' not in df_meta.columns
+        df_meta['location'] = (
+            df_meta['geographic location (country and/or sea)'].combine_first(
+                df_meta['geo_loc_name'].str
+                                       .split(':')
+                                       .str[0]
+            ).replace({
+                'Not Applicable': pd.NA,
+                'not applicable': pd.NA,
+                'missing': pd.NA,
+                'not collected': pd.NA
+            })
+        )
 
-            df_list.append(df_sel)
-
-        df = pd.concat(df_list)
-        assert df.shape[0] == len(accession_list)
-        df.to_csv(output.fname, index=False)
+        # save data
+        df_meta.to_csv(output.fname, index=False)
 
 
 rule compute_additional_properties:
