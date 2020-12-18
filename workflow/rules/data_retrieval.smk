@@ -184,6 +184,8 @@ rule bwa_mem:
     resources:
         mem_mb = 16_000
     threads: 8
+    conda:
+        '../envs/preprocessing.yaml'
     # group: 'data_processing'
     shell:
         """
