@@ -485,19 +485,19 @@ rule retrieve_sra_metadata:
         assert df_meta['run_accession'].tolist() == accession_list
 
         # engineer additional features
-        assert 'location' not in df_meta.columns
-        df_meta['location'] = (
-            df_meta['geographic location (country and/or sea)'].combine_first(
-                df_meta['geo_loc_name'].str
-                                       .split(':')
-                                       .str[0]
-            ).replace({
-                'Not Applicable': pd.NA,
-                'not applicable': pd.NA,
-                'missing': pd.NA,
-                'not collected': pd.NA
-            })
-        )
+        # assert 'location' not in df_meta.columns
+        # df_meta['location'] = (
+        #     df_meta['geographic location (country and/or sea)'].combine_first(
+        #         df_meta['geo_loc_name'].str
+        #                                .split(':')
+        #                                .str[0]
+        #     ).replace({
+        #         'Not Applicable': pd.NA,
+        #         'not applicable': pd.NA,
+        #         'missing': pd.NA,
+        #         'not collected': pd.NA
+        #     })
+        # )
 
         # save data
         df_meta.to_csv(output.fname, index=False)
