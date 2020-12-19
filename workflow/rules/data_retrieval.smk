@@ -1,7 +1,10 @@
+import pandas as pd
+
+
 localrules: all
 
 
-accession_list = config['sample_accessions']
+accession_list = pd.read_csv(srcdir('../../'  + config['sample_accession_file']))['accession'].tolist()
 
 
 def len_cutoff(wildcards, trim_percent_cutoff=.8):
