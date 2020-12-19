@@ -38,6 +38,8 @@ subworkflow visualize_results:
 rule all:
     input:
         data_retrieval('processed_fastq_data'),
+        data_retrieval('plots/coverage_per_locus.pdf'),
+        data_retrieval('plots/coverage_per_sample.pdf'),
         vpipe_wrapper_SE('vcf_files'),
         vpipe_wrapper_PE('vcf_files'),
         visualize_results('results/top_samples_extended.txt'),
