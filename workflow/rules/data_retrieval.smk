@@ -484,7 +484,7 @@ rule retrieve_sra_metadata:
                     continue
 
         df_meta = pd.concat(df_list)
-        assert df_meta['run_accession'].tolist() == accession_list
+        assert set(df_meta['run_accession'].tolist()) == set(accession_list)
 
         # engineer additional features
         # assert 'location' not in df_meta.columns
