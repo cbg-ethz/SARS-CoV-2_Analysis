@@ -168,7 +168,7 @@ rule bwa_index:
     params:
         prefix = 'references/reference'
     wrapper:
-        '0.51.2/bio/bwa/index'
+        '0.68.0/bio/bwa/index'
 
 
 rule bwa_mem:
@@ -208,7 +208,7 @@ rule samtools_index:
         'alignment/{accession}.bam.bai'
     # group: 'data_processing'
     wrapper:
-        '0.51.2/bio/samtools/index'
+        '0.68.0/bio/samtools/index'
 
 
 rule compute_coverage:
