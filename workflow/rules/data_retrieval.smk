@@ -305,12 +305,12 @@ rule plot_coverage_per_locus:
 
         # read data
         df = pd.read_csv(input.fname)
-        sel = pd.read(input.fname_selection, squeeze=True)
+        sel = pd.read_csv(input.fname_selection, squeeze=True)
         df_sub = df[sel]
 
-        df_genes = pd.read_csv('references/genes.csv')
+        df_genes = pd.read_csv('../../resources/references/genes.csv')
         df_primers = pd.read_csv(
-            'references/nCoV-2019.bed', sep='\t', header=None,
+            '../../resources/references/nCoV-2019.bed', sep='\t', header=None,
             names=['chrom', 'chromStart', 'chromEnd', 'name', 'foo', 'strand'])
 
         # compute data statistics
