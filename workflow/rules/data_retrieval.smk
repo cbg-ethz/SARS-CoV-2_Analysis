@@ -562,7 +562,7 @@ rule assemble_final_dataframe:
         df_uq = pd.read_csv(input.fname_upperquar, index_col='variable')
 
         df_extra = pd.read_csv(input.fname_extra, index_col='accession')
-        df_meta = pd.read_csv(input.fname_meta, index_col='Run')
+        df_meta = pd.read_csv(input.fname_meta, index_col='run_accession')
 
         assert sorted(df_lq.index) == sorted(df_mq.index) == sorted(df_uq.index) == sorted(df_extra.index) == sorted(df_meta.index)
 
