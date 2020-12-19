@@ -247,6 +247,8 @@ rule aggregate_results:
         fname_lowquar = 'results/coverage_lowerquartile.csv',
         fname_median = 'results/coverage_median.csv',
         fname_upperquar = 'results/coverage_upperquartile.csv'
+    benchmark:
+        'benchmarks/aggregate_results.benchmark.txt'
     resources:
         mem_mb = 20_000
     run:
@@ -283,6 +285,8 @@ rule plot_coverage_per_locus:
         fname_selection = 'results/selected_samples.csv'
     output:
         fname = report('plots/coverage_per_locus.pdf', caption='report/empty_caption.rst')
+    benchmark:
+        'benchmarks/plot_coverage_per_locus.benchmark.txt'
     resources:
         mem_mb = 5_000
     run:
@@ -394,6 +398,8 @@ rule plot_coverage_per_sample:
         fname_upperquar = 'results/coverage_upperquartile.csv'
     output:
         fname = report('plots/coverage_per_sample.pdf', caption='report/empty_caption.rst')
+    benchmark:
+        'benchmarks/plot_coverage_per_sample.benchmark.txt'
     resources:
         mem_mb = 5_000
     run:
@@ -460,6 +466,8 @@ rule plot_coverage_per_sample:
 rule retrieve_sra_metadata:
     output:
         fname = 'results/sra_metadata.csv'
+    benchmark:
+        'benchmarks/retrieve_sra_metadata.benchmark.txt'
     run:
         import pandas as pd
         from tqdm import tqdm
@@ -515,6 +523,8 @@ rule compute_additional_properties:
             accession=accession_list)
     output:
         fname = 'results/extra_properties.csv'
+    benchmark:
+        'benchmarks/compute_additional_properties.benchmark.txt'
     resources:
         mem_mb = 10_000
     run:
