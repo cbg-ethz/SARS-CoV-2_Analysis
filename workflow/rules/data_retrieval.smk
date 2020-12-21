@@ -12,7 +12,7 @@ def len_cutoff(wildcards, trim_percent_cutoff=.8):
     import glob
 
     import numpy as np
-    from Bio import SeqIO
+    from snakemake import shell
 
     available_files = list(sorted(
         glob.glob(f'data/{wildcards.accession}*.fastq')))
@@ -22,9 +22,9 @@ def len_cutoff(wildcards, trim_percent_cutoff=.8):
             f'{wildcards.accession}: {len(available_files)}')
 
     fname = available_files[0]
-    read_len = np.mean(
-        [len(r.seq) for r in SeqIO.parse(fname, 'fastq')]
-    ).astype(int)
+    read_len = int(shell.check_output(
+        f"bioawk -c fastx '{{{{ bases += length($seq); count++ }}}} END{{{{print int(bases/count)}}}}' {fname}"
+    ).rstrip())
 
     len_cutoff = int(trim_percent_cutoff * read_len)
     return len_cutoff
