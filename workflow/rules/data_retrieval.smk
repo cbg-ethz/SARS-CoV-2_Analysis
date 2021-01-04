@@ -174,9 +174,10 @@ rule bwa_index:
 rule bwa_mem:
     input:
         fname_marker = 'trimmed/{accession}.marker',
-        index = 'references/reference.amb'
+        index = 'references/reference.amb',
+        fname_ref = srcdir('../../' + config['reference'])
     output:
-        fname_bam = 'alignment/{accession}.bam'
+        fname_cram = 'alignment/{accession}.cram'
     log:
         outfile = 'logs/alignment.{accession}.out.log',
         errfile = 'logs/alignment.{accession}.err.log'
@@ -196,16 +197,20 @@ rule bwa_mem:
             -t {threads} \
             {params.index} \
             trimmed/{wildcards.accession}*.fastq \
-            | samtools sort -o {output.fname_bam}) \
+            | samtools sort \
+                --threads {threads} \
+                --reference {input.fname_ref} \
+                --output-fmt CRAM,embed_ref,use_bzip2,use_lzma,level=9,seqs_per_slice=1000000 \
+                -o {output.fname_cram}) \
         > {log.outfile} 2> {log.errfile}
         """
 
 
 rule samtools_index:
     input:
-        'alignment/{accession}.bam'
+        'alignment/{accession}.cram'
     output:
-        'alignment/{accession}.bam.bai'
+        'alignment/{accession}.cram.crai'
     # group: 'data_processing'
     wrapper:
         '0.68.0/bio/samtools/index'
@@ -213,8 +218,8 @@ rule samtools_index:
 
 rule compute_coverage:
     input:
-        fname = 'alignment/{accession}.bam',
-        index = 'alignment/{accession}.bam.bai'
+        fname = 'alignment/{accession}.cram',
+        index = 'alignment/{accession}.cram.crai'
     output:
         fname = 'coverage/coverage.{accession}.csv'
     # group: 'data_processing'
@@ -224,7 +229,7 @@ rule compute_coverage:
         import numpy as np
         import pandas as pd
 
-        bam = pysam.AlignmentFile(input.fname, 'rb')
+        bam = pysam.AlignmentFile(input.fname, 'rc')
         assert bam.has_index()
         assert len(bam.references) == 1
         ref = bam.references[0]
