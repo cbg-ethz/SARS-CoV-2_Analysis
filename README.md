@@ -8,6 +8,8 @@ First, clone the repository:
 $ git clone --recurse-submodules https://github.com/cbg-ethz/SARS-CoV-2_Analysis
 ```
 
+If needed, search for new samples using `QuerySRAAccessions.ipynb`.
+
 The whole analysis can then be reproduced by executing the following line:
 
 ```bash
