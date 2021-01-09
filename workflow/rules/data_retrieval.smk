@@ -525,6 +525,9 @@ rule compute_additional_properties:
     input:
         fname_list = expand(
             'alignment/{accession}.cram',
+            accession=accession_list),
+        index_list = expand(
+            'alignment/{accession}.cram.crai',
             accession=accession_list)
     output:
         fname = 'results/extra_properties.csv'
