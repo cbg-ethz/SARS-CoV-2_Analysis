@@ -523,8 +523,8 @@ rule retrieve_sra_metadata:
 
 rule compute_additional_properties:
     input:
-        marker_list = expand(
-            'trimmed/{accession}.marker',
+        fname_list = expand(
+            'alignment/{accession}.cram',
             accession=accession_list)
     output:
         fname = 'results/extra_properties.csv'
@@ -539,19 +539,17 @@ rule compute_additional_properties:
         import numpy as np
         import pandas as pd
 
-        from Bio import SeqIO
+        import pysam
         from tqdm import tqdm
 
         tmp = []
-        for marker_fname in tqdm(input.marker_list):
-            accession = os.path.splitext(os.path.basename(marker_fname))[0]
+        for fname in tqdm(input.fname_list):
+            accession = os.path.splitext(os.path.basename(fname))[0]
+            cram = pysam.AlignmentFile(fname, 'rc')
 
-            fname_glob = marker_fname.replace('.marker', '*.fastq')
-            available_files = glob.glob(fname_glob)
-
-            fname = available_files[0]
             read_len = np.mean(
-                [len(r.seq) for r in SeqIO.parse(fname, 'fastq')]
+                [read.infer_read_length()
+                 for read in cram.fetch(until_eof=True)]
             ).astype(int)
 
             tmp.append({
