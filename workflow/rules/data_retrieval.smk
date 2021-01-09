@@ -50,6 +50,7 @@ rule download_fastq:
         mem_mb = 5_000
     threads: 6
     # group: 'data_processing'
+    priority: -1
     run:
         import os
         import time
@@ -99,6 +100,7 @@ rule vpipe_trim:
     # group: 'data_processing'
     conda:
         '../envs/preprocessing.yaml'
+    priority: 1
     shell:
         """
         echo "The length cutoff is: {params.len_cutoff}" >> {log.outfile}
@@ -191,6 +193,7 @@ rule bwa_mem:
     conda:
         '../envs/alignment.yaml'
     # group: 'data_processing'
+    priority: 2
     shell:
         """
         (bwa mem \
@@ -218,6 +221,7 @@ rule samtools_index:
     output:
         'alignment/{accession}.cram.crai'
     # group: 'data_processing'
+    priority: 3
     wrapper:
         '0.68.0/bio/samtools/index'
 
@@ -229,6 +233,7 @@ rule compute_coverage:
     output:
         fname = 'coverage/coverage.{accession}.csv'
     # group: 'data_processing'
+    priority: 3
     run:
         import pysam
 
