@@ -5,3 +5,5 @@ thresholds:
 reference: resources/references/NC_045512.2.fasta
 
 sample_accession_file: config/sample_accessions.csv
+
+data_saver_mode: false

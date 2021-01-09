@@ -203,6 +203,12 @@ rule bwa_mem:
                 --output-fmt CRAM,embed_ref,use_bzip2,use_lzma,level=9,seqs_per_slice=1000000 \
                 -o {output.fname_cram}) \
         > {log.outfile} 2> {log.errfile}
+
+        # delete used fastq files
+        if [ {config[data_saver_mode]} == True ]; then
+            rm data/{wildcards.accession}*.fastq data/{wildcards.accession}.marker
+            rm trimmed/{wildcards.accession}*.fastq trimmed/{wildcards.accession}.marker
+        fi
         """
 
 
