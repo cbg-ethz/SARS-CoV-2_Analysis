@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 bsub \
   -N \
   -R 'rusage[mem=10000]' \
