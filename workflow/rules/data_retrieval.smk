@@ -231,7 +231,7 @@ rule compute_coverage:
         fname = 'alignment/{accession}.cram',
         index = 'alignment/{accession}.cram.crai'
     output:
-        fname = 'coverage/coverage.{accession}.csv'
+        fname = 'coverage/coverage.{accession}.csv.gz'
     # group: 'data_processing'
     priority: 3
     run:
@@ -255,14 +255,14 @@ rule compute_coverage:
 rule aggregate_results:
     input:
         fname_list = expand(
-            'coverage/coverage.{accession}.csv',
+            'coverage/coverage.{accession}.csv.gz',
             accession=accession_list)
     output:
-        fname = 'results/coverage.csv',
-        fname_stats = report('results/statistics.csv', caption='report/empty_caption.rst'),
-        fname_lowquar = 'results/coverage_lowerquartile.csv',
-        fname_median = 'results/coverage_median.csv',
-        fname_upperquar = 'results/coverage_upperquartile.csv'
+        fname = 'results/coverage.csv.gz',
+        fname_stats = report('results/statistics.csv.gz', caption='report/empty_caption.rst'),
+        fname_lowquar = 'results/coverage_lowerquartile.csv.gz',
+        fname_median = 'results/coverage_median.csv.gz',
+        fname_upperquar = 'results/coverage_upperquartile.csv.gz'
     benchmark:
         'benchmarks/aggregate_results.benchmark.txt'
     resources:
@@ -297,7 +297,7 @@ rule aggregate_results:
 
 rule plot_coverage_per_locus:
     input:
-        fname = 'results/coverage.csv',
+        fname = 'results/coverage.csv.gz',
         fname_selection = 'results/selected_samples.csv'
     output:
         fname = report('plots/coverage_per_locus.pdf', caption='report/empty_caption.rst')
@@ -409,9 +409,9 @@ rule plot_coverage_per_locus:
 
 rule plot_coverage_per_sample:
     input:
-        fname_lowquar = 'results/coverage_lowerquartile.csv',
-        fname_median = 'results/coverage_median.csv',
-        fname_upperquar = 'results/coverage_upperquartile.csv'
+        fname_lowquar = 'results/coverage_lowerquartile.csv.gz',
+        fname_median = 'results/coverage_median.csv.gz',
+        fname_upperquar = 'results/coverage_upperquartile.csv.gz'
     output:
         fname = report('plots/coverage_per_sample.pdf', caption='report/empty_caption.rst')
     benchmark:
@@ -481,7 +481,7 @@ rule plot_coverage_per_sample:
 
 rule retrieve_sra_metadata:
     output:
-        fname = 'results/sra_metadata.csv'
+        fname = 'results/sra_metadata.csv.gz'
     benchmark:
         'benchmarks/retrieve_sra_metadata.benchmark.txt'
     run:
@@ -541,7 +541,7 @@ rule compute_additional_properties:
             'alignment/{accession}.cram.crai',
             accession=accession_list)
     output:
-        fname = 'results/extra_properties.csv'
+        fname = 'results/extra_properties.csv.gz'
     benchmark:
         'benchmarks/compute_additional_properties.benchmark.txt'
     resources:
@@ -576,13 +576,13 @@ rule compute_additional_properties:
 
 rule assemble_final_dataframe:
     input:
-        fname_lowquar = 'results/coverage_lowerquartile.csv',
-        fname_median = 'results/coverage_median.csv',
-        fname_upperquar = 'results/coverage_upperquartile.csv',
-        fname_extra = 'results/extra_properties.csv',
-        fname_meta = 'results/sra_metadata.csv'
+        fname_lowquar = 'results/coverage_lowerquartile.csv.gz',
+        fname_median = 'results/coverage_median.csv.gz',
+        fname_upperquar = 'results/coverage_upperquartile.csv.gz',
+        fname_extra = 'results/extra_properties.csv.gz',
+        fname_meta = 'results/sra_metadata.csv.gz'
     output:
-        fname = report('results/final_dataframe.csv')
+        fname = report('results/final_dataframe.csv.gz')
     run:
         import pandas as pd
 
@@ -610,7 +610,7 @@ rule assemble_final_dataframe:
 
 rule select_samples:
     input:
-        fname = 'results/final_dataframe.csv'
+        fname = 'results/final_dataframe.csv.gz'
     output:
         fname = report('results/selected_samples.csv', caption='report/empty_caption.rst')
     run:
@@ -637,7 +637,7 @@ rule select_samples:
 rule prepare_vpipe_input:
     input:
         fname_selected = 'results/selected_samples.csv',
-        fname_final = 'results/final_dataframe.csv'
+        fname_final = 'results/final_dataframe.csv.gz'
     output:
         out_dir = directory('processed_fastq_data')
     params:
