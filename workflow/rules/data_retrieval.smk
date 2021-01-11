@@ -193,8 +193,8 @@ rule bwa_mem:
 
         # delete used fastq files
         if [ {config[data_saver_mode]} == True ]; then
-            rm data/{wildcards.accession}*.fastq data/{wildcards.accession}.marker
-            rm trimmed/{wildcards.accession}*.fastq trimmed/{wildcards.accession}.marker
+            rm data/{wildcards.accession}*.fastq #data/{wildcards.accession}.marker
+            rm trimmed/{wildcards.accession}*.fastq #trimmed/{wildcards.accession}.marker
         fi
         """
 
