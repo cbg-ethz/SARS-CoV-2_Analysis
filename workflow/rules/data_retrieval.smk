@@ -7,28 +7,6 @@ localrules: all
 accession_list = pd.read_csv(srcdir('../../'  + config['sample_accession_file']))['accession'].tolist()
 
 
-def len_cutoff(wildcards, trim_percent_cutoff=.8):
-    """Compute minimal length based on average read length."""
-    import glob
-
-    import numpy as np
-    from snakemake import shell
-
-    available_files = list(sorted(
-        glob.glob(f'data/{wildcards.accession}*.fastq')))
-    if len(available_files) not in (1, 2, 3):
-        raise RuntimeError(
-            'Unexpected number of FastQ files for ' +
-            f'{wildcards.accession}: {len(available_files)}')
-
-    fname = available_files[0]
-    read_len = int(shell.check_output(
-        f"bioawk -c fastx '{{{{ bases += length($seq); count++ }}}} END{{{{print int(bases/count)}}}}' {fname}"
-    ).rstrip())
-
-    len_cutoff = int(trim_percent_cutoff * read_len)
-    return len_cutoff
-
 
 rule all:
     input:
@@ -91,7 +69,7 @@ rule vpipe_trim:
         touch('trimmed/{accession}.marker')
     params:
         extra = '-ns_max_n 4 -min_qual_mean 30 -trim_qual_left 30 -trim_qual_right 30 -trim_qual_window 10',
-        len_cutoff = len_cutoff
+        trim_percent_cutoff = .8,
     log:
         outfile = 'logs/trimming.{accession}.out.log',
         errfile = 'logs/trimming.{accession}.err.log'
@@ -103,7 +81,13 @@ rule vpipe_trim:
     priority: 1
     shell:
         """
-        echo "The length cutoff is: {params.len_cutoff}" >> {log.outfile}
+        # compute length cutoff
+        fname_marker="{input.fname_marker}"
+        fastq_fname="${{fname_marker%.marker}}_1.fastq"
+
+        read_len=$(bioawk -c fastx '{{{{ bases += length($seq); count++ }}}} END {{{{print int(bases/count)}}}}' "$fastq_fname")
+
+        len_cutoff=$(echo "($read_len * {params.trim_percent_cutoff}) / 1" | bc)
 
         # detect SE/PE read type
         filecount=$(ls data/{wildcards.accession}*.fastq | wc -l)
@@ -140,7 +124,7 @@ rule vpipe_trim:
             -out_format 3 \
             -out_good trimmed/{wildcards.accession} \
             -out_bad null \
-            -min_len {params.len_cutoff} \
+            -min_len "$len_cutoff" \
             -log {log.outfile} 2> >(tee {log.errfile} >&2)
 
         # remove singletons
