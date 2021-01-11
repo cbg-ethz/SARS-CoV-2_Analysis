@@ -7,7 +7,6 @@ localrules: all
 accession_list = pd.read_csv(srcdir('../../'  + config['sample_accession_file']))['accession'].tolist()
 
 
-
 rule all:
     input:
         'plots/coverage_per_locus.pdf',
