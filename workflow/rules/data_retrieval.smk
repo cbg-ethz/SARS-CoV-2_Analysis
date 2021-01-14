@@ -1,12 +1,47 @@
 import pandas as pd
 
 
+# setup
 localrules: all
 
 
 accession_list = pd.read_csv(srcdir('../../'  + config['sample_accession_file']))['accession'].tolist()
 
 
+# job grouping requires execution dependent resources
+job_resources = {
+    'download_fastq': {
+        'mem_mb': 5_000,
+        'threads': 6
+    },
+    'vpipe_trim': {
+        'mem_mb': 10_000,
+        'threads': 1
+    },
+    'bwa_mem': {
+        'mem_mb': 16_000,
+        'threads': 8
+    }
+}
+if config['job_grouping_mode']:
+    # to be used with '--group-components data_processing=10'
+    job_resources = {
+        'download_fastq': {
+            'mem_mb': 200,
+            'threads': 1
+        },
+        'vpipe_trim': {
+            'mem_mb': 200,
+            'threads': 1
+        },
+        'bwa_mem': {
+            'mem_mb': 200,
+            'threads': 1
+        }
+    }
+
+
+# workflow
 rule all:
     input:
         'plots/coverage_per_locus.pdf',
@@ -24,8 +59,8 @@ rule download_fastq:
         outfile = 'logs/download.{accession}.out.log',
         errfile = 'logs/download.{accession}.err.log'
     resources:
-        mem_mb = 5_000
-    threads: 6
+        mem_mb = job_resources['download_fastq']['mem_mb']
+    threads: job_resources['download_fastq']['threads']
     group: 'data_processing'
     priority: -1
     run:
@@ -73,7 +108,8 @@ rule vpipe_trim:
         outfile = 'logs/trimming.{accession}.out.log',
         errfile = 'logs/trimming.{accession}.err.log'
     resources:
-        mem_mb = 10_000
+        mem_mb = job_resources['vpipe_trim']['mem_mb']
+    threads: job_resources['vpipe_trim']['threads']
     group: 'data_processing'
     conda:
         '../envs/preprocessing.yaml'
@@ -171,8 +207,8 @@ rule bwa_mem:
         sort = 'samtools',
         sort_order = 'coordinate',
     resources:
-        mem_mb = 16_000
-    threads: 8
+        mem_mb = job_resources['bwa_mem']['mem_mb']
+    threads: job_resources['bwa_mem']['threads']
     conda:
         '../envs/alignment.yaml'
     group: 'data_processing'
