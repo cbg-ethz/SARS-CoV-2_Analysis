@@ -76,7 +76,13 @@ rule download_fastq:
         while True:
             try:
                 shell(
-                    'fasterq-dump --threads {threads} --outdir {outdir} --temp {tmpdir} {wildcards.accession} --progress > >(tee {log.outfile}) 2>&1'
+                    'fasterq-dump'
+                    ' --threads {threads}'
+                    ' --progress'
+                    ' --outdir {outdir}'
+                    ' --temp {tmpdir}'
+                    ' {wildcards.accession}'
+                    ' > >(tee {log.outfile}) 2>&1''
                 )
             except subprocess.CalledProcessError:
                 print('Download process crashed, hopefully this is just a fluke...')
