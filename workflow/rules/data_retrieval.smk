@@ -125,7 +125,7 @@ rule vpipe_trim:
         # compute length cutoff
         fname_marker="{input.fname_marker}"
         fastq_fname="${{fname_marker%.marker}}.fastq"
-        if [ ! -f "@fastq_fname" ]; then
+        if [ ! -f "$fastq_fname" ]; then
             # is paired-end
             fastq_fname="${{fname_marker%.marker}}_1.fastq"
         fi
