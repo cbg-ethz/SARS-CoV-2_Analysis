@@ -78,7 +78,7 @@ rule download_fastq:
                 shell(
                     'fasterq-dump'
                     ' --threads {threads}'
-                    ' --progress'
+                    ' -p'  # --progress
                     ' --outdir {outdir}'
                     ' --temp {tmpdir}'
                     ' {wildcards.accession}'
