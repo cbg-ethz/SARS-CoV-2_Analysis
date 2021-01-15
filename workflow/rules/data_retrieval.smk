@@ -592,7 +592,8 @@ rule compute_additional_properties:
 
             read_len = np.mean(
                 [read.infer_read_length()
-                 for read in cram.fetch(until_eof=True)]
+                 for read in cram.fetch(until_eof=True)
+                 if read.infer_read_length() is not None]
             ).astype(int)
 
             tmp.append({
