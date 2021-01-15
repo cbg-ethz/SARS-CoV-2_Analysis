@@ -72,6 +72,12 @@ rule download_fastq:
         outdir = Path(os.path.dirname(output.fname_marker))
         tmpdir = Path(os.path.join(outdir, f'tmp.{wildcards.accession}'))
 
+        # delete output files if they already exist
+        # because fasterq-dump crashes otherwise
+        for path in outdir.glob(f"{wildcards.accession}*.fastq"):
+            path.unlink(missing_ok=True)
+
+        # commence download
         counter = 0
         while True:
             try:
