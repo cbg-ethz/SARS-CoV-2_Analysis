@@ -1,5 +1,7 @@
 # SARS-CoV-2_Analysis
 
+A Snakemake workflow for large-scale SARS-CoV-2 analyses.
+
 ## Usage
 
 First, clone the repository:
