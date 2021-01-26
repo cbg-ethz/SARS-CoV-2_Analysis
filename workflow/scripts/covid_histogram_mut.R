@@ -7,6 +7,7 @@ library(tidyverse)
 covid_table <- read.table(snakemake@input$fname_vcf, header = TRUE)
 
 outdir <- snakemake@output$outdir
+dir.create(outdir, recursive = TRUE)
 
 # add entropy
 covid_table %>% mutate(MUT = 1) -> covid_table

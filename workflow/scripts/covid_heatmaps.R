@@ -26,8 +26,8 @@ file_append <- paste0("_", k)
 covid_table <- read.table(snakemake@input$fname, header = TRUE)
 
 covid_samples <- read.csv(snakemake@input$fname_covariates) %>%
-  filter(X50. > 1000) %>% filter(X25. > 100) %>% filter(X75. < 10000) %>%
-  pull(X.1)
+  filter(per_base_read_count_median > snakemake@config$thresholds$median_minium) %>% filter(per_base_read_count_lower_quartile > snakemake@config$thresholds$quartile_range[[1]]) %>% filter(per_base_read_count_upper_quartile < snakemake@config$thresholds$quartile_range[[2]]) %>%
+  pull(X)
 
 split_accession <- function(x) {
   str_split(x, "__")[[1]][1]
@@ -82,12 +82,6 @@ covid_table_sel %>% select(SAMPLE, POS, ENT) %>%
 
 covid_ent_mat <- as.matrix(covid_ent_wide[, -1])
 row.names(covid_ent_mat) <- covid_ent_wide[, 1]
-
-if (ent_div) {
-  save(covid_ent_mat, file = file.path(snakemake@output$outdir, "./data/covid_ent_mat_Basel.rData"))
-} else {
-  save(covid_ent_mat, file = file.path(snakemake@output$outdir, "./data/covid_div_mat_Basel.rData"))
-}
 
 ### Read in gene positions
 

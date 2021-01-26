@@ -1,46 +1,22 @@
-# TODO: can we assume that the subworkflow order will always be kept?
-subworkflow data_retrieval:
-    workdir:
-        '../results/pipeline_run__data_retrieval'
-    snakefile:
-        'rules/data_retrieval.smk'
-    configfile:
-        'config/data_retrieval.config.yaml'
+configfile: 'config/config.yaml'
 
 
-subworkflow vpipe_wrapper_SE:  # V-pipe run for single-end reads
-    workdir:
-        '../results/pipeline_run__vpipe_wrapper_SE'
-    snakefile:
-        'rules/vpipe_wrapper.smk'
-    configfile:
-        'config/vpipe_wrapper_se.config.yaml'
-
-
-subworkflow vpipe_wrapper_PE:  # V-pipe run for paired-end reads
-    workdir:
-        '../results/pipeline_run__vpipe_wrapper_PE'
-    snakefile:
-        'rules/vpipe_wrapper.smk'
-    configfile:
-        'config/vpipe_wrapper_pe.config.yaml'
-
-
-subworkflow visualize_results:
-    workdir:
-        '../results/pipeline_run__visualize_results'
-    snakefile:
-        'rules/visualize_results.smk'
-    configfile:
-        'config/visualize_results.config.yaml'
+include: 'rules/data_retrieval.smk'
+include: 'rules/variant_calling.smk'
+include: 'rules/visualize_results.smk'
 
 
 rule all:
     input:
-        data_retrieval('processed_fastq_data'),
-        data_retrieval('plots/coverage_per_locus.pdf'),
-        data_retrieval('plots/coverage_per_sample.pdf'),
-        vpipe_wrapper_SE('vcf_files'),
-        vpipe_wrapper_PE('vcf_files'),
-        visualize_results('results/top_samples_extended.txt'),
-        visualize_results('plots/snv_coverage_plot.pdf')
+        'results/data_retrieval/plots/coverage_per_locus.pdf',
+        'results/data_retrieval/plots/coverage_per_sample.pdf',
+        'results/data_retrieval/results/selected_samples.csv',
+
+        'results/variant_calling/vcf_data.csv',
+
+        'results/analysis/plots/heatmaps/',
+        'results/analysis/plots/histograms/',
+        'results/analysis/plots/mutation_histograms/',
+        'results/analysis/plots/snv_coverage_plot.pdf',
+        'results/analysis/results/top_bases_extended.txt',
+        'results/analysis/results/top_samples_extended.txt',

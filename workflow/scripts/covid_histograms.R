@@ -12,7 +12,7 @@ library(tidyverse)
 covid_table <- read.table(snakemake@input$fname, header = TRUE)
 
 outdir <- snakemake@output$outdir
-dir.create(outdir, recursive = TRUE) # TODO: this shouldn't be necessary
+dir.create(outdir, recursive = TRUE)
 
 # add entropy
 covid_table %>% mutate(ENT = Entropy(A_freq) + Entropy(C_freq) +

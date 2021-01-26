@@ -1,6 +1,0 @@
-vpipe_config_path: ../../config/vpipe.config.template
-
-config_mods:
-    DATADIR: ../../results/pipeline_run__data_retrieval/processed_fastq_data/samples_PE
-    SAMPLES_FILE: ../../results/pipeline_run__data_retrieval/processed_fastq_data/samples_PE.tsv
-    PAIRED: true

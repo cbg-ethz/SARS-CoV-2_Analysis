@@ -18,7 +18,7 @@ def flip(items, ncol):
 
 
 def convert_vcf(fname):
-    """Convert VCF to JSON."""
+    """Convert VCF to dataframe."""
     tmp = []
     with open(fname) as fd:
         vcf_reader = vcf.Reader(fd)
@@ -87,7 +87,7 @@ def main(
 
     ax_coverage.fill_between(
         df_coverage.index,
-        df_coverage[f'{accession}-19700101'],
+        df_coverage[accession],
         alpha=0.3,
         color='#88bae3',
     )

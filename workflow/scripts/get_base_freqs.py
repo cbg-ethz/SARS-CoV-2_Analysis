@@ -11,7 +11,7 @@ import os
 import glob
 
 
-collectionName = snakemake.input['vcf_dir']
+collectionName = os.path.dirname(snakemake.input['fname_list'][0])
 delCoverageThreshold = 0  # by default deletions with any coverage are used
 delThreshold = 0.0  # by default deletions at all frequencies are used
 delThreshold = snakemake.config['params']['deletion_threshold']

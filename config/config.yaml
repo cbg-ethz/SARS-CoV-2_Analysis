@@ -1,3 +1,4 @@
+# data retrieval
 thresholds:
     median_minium: 1000
     quartile_range: [100, 10000]
@@ -7,4 +8,14 @@ reference: resources/references/NC_045512.2.fasta
 sample_accession_file: config/sample_accessions.csv
 
 data_saver_mode: false
-job_grouping_mode: true
+job_grouping_mode: false
+
+
+# analysis
+input:
+    snv_coverage_plot:
+        accession: SRR11953858
+
+params:
+    deletion_threshold: 0.005
+    deletion_coverage_threshold: 0

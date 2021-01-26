@@ -5,7 +5,7 @@ import pandas as pd
 localrules: all
 
 
-accession_list = pd.read_csv(srcdir('../../'  + config['sample_accession_file']))['accession'].tolist()
+accession_list = pd.read_csv(config['sample_accession_file'])['accession'].tolist()
 
 
 # job grouping requires execution dependent resources
@@ -42,17 +42,9 @@ if config['job_grouping_mode']:
 
 
 # workflow
-rule all:
-    input:
-        'plots/coverage_per_locus.pdf',
-        'plots/coverage_per_sample.pdf',
-        'results/selected_samples.csv',
-        'processed_fastq_data'
-
-
 rule download_fastq:
     output:
-        fname_marker = touch('data/{accession}.marker')
+        fname_marker = touch('results/data_retrieval/data/{accession}.marker')
     params:
         restart_times = 10
     log:
@@ -110,9 +102,9 @@ rule download_fastq:
 
 rule vpipe_trim:
     input:
-        fname_marker = 'data/{accession}.marker'
+        fname_marker = 'results/data_retrieval/data/{accession}.marker'
     output:
-        touch('trimmed/{accession}.marker')
+        touch('results/data_retrieval/trimmed/{accession}.marker')
     params:
         extra = '-ns_max_n 4 -min_qual_mean 30 -trim_qual_left 30 -trim_qual_right 30 -trim_qual_window 10',
         trim_percent_cutoff = .8,
@@ -141,26 +133,26 @@ rule vpipe_trim:
         len_cutoff=$(echo "($read_len * {params.trim_percent_cutoff}) / 1" | bc)
 
         # detect SE/PE read type
-        filecount=$(ls data/{wildcards.accession}*.fastq | wc -l)
+        filecount=$(ls results/data_retrieval/data/{wildcards.accession}*.fastq | wc -l)
         case $filecount in
             1)
                 # SE reads
                 echo "Read type: SE" >> {log.outfile}
-                input_spec="-fastq data/{wildcards.accession}.fastq"
+                input_spec="-fastq results/data_retrieval/data/{wildcards.accession}.fastq"
                 ;;
             2)
                 # PE reads
                 echo "Read type: PE" >> {log.outfile}
-                input_spec="-fastq data/{wildcards.accession}_1.fastq -fastq2 data/{wildcards.accession}_2.fastq"
+                input_spec="-fastq results/data_retrieval/data/{wildcards.accession}_1.fastq -fastq2 results/data_retrieval/data/{wildcards.accession}_2.fastq"
                 ;;
             3)
                 # some runs have a variable number of reads per spot.
                 # why? how? we might never know.
                 # for now, let's pretend everything is a-okay.
                 echo "Read type: 'variable number of reads per spot'" >> {log.outfile}
-                input_spec="-fastq data/{wildcards.accession}_1.fastq -fastq2 data/{wildcards.accession}_2.fastq"
+                input_spec="-fastq results/data_retrieval/data/{wildcards.accession}_1.fastq -fastq2 results/data_retrieval/data/{wildcards.accession}_2.fastq"
 
-                rm data/{wildcards.accession}.fastq # there is nothing to see here, walk along
+                rm results/data_retrieval/data/{wildcards.accession}.fastq # there is nothing to see here, walk along
                 ;;
             *)
                 # oh no
@@ -173,53 +165,53 @@ rule vpipe_trim:
             $input_spec \
             {params.extra} \
             -out_format 3 \
-            -out_good trimmed/{wildcards.accession} \
+            -out_good results/data_retrieval/trimmed/{wildcards.accession} \
             -out_bad null \
             -min_len "$len_cutoff" \
             -log {log.outfile} 2> >(tee {log.errfile} >&2)
 
         # remove singletons
-        rm -f trimmed/{wildcards.accession}*_singletons.fastq
+        rm -f results/data_retrieval/trimmed/{wildcards.accession}*_singletons.fastq
 
         # if no reads survive, create empty fastq file
         # (such that mapping does not fail)
-        trimmedfilecount=$(shopt -s nullglob; files=(trimmed/{wildcards.accession}*.fastq); echo ${{#files[@]}})
+        trimmedfilecount=$(shopt -s nullglob; files=(results/data_retrieval/trimmed/{wildcards.accession}*.fastq); echo ${{#files[@]}})
         if [ "$trimmedfilecount" -eq "0" ]; then
             echo "No non-singletons survived trimming, creating empty FastQ file" >> {log.outfile}
-            touch trimmed/{wildcards.accession}.fastq
+            touch results/data_retrieval/trimmed/{wildcards.accession}.fastq
         fi
         """
 
 
 rule bwa_index:
     input:
-        srcdir('../../' + config['reference'])
+        config['reference']
     output:
-        'references/reference.amb',
-        'references/reference.ann',
-        'references/reference.bwt',
-        'references/reference.pac',
-        'references/reference.sa'
+        'results/data_retrieval/references/reference.amb',
+        'results/data_retrieval/references/reference.ann',
+        'results/data_retrieval/references/reference.bwt',
+        'results/data_retrieval/references/reference.pac',
+        'results/data_retrieval/references/reference.sa'
     log:
         'logs/bwa_index.log'
     params:
-        prefix = 'references/reference'
+        prefix = 'results/data_retrieval/references/reference'
     wrapper:
         '0.68.0/bio/bwa/index'
 
 
 rule bwa_mem:
     input:
-        fname_marker = 'trimmed/{accession}.marker',
-        index = 'references/reference.amb',
-        fname_ref = srcdir('../../' + config['reference'])
+        fname_marker = 'results/data_retrieval/trimmed/{accession}.marker',
+        index = 'results/data_retrieval/references/reference.amb',
+        fname_ref = config['reference']
     output:
-        fname_cram = 'alignment/{accession}.cram'
+        fname_cram = 'results/data_retrieval/alignment/{accession}.cram'
     log:
         outfile = 'logs/alignment.{accession}.out.log',
         errfile = 'logs/alignment.{accession}.err.log'
     params:
-        index = 'references/reference',
+        index = 'results/data_retrieval/references/reference',
         sort = 'samtools',
         sort_order = 'coordinate',
     resources:
@@ -234,7 +226,7 @@ rule bwa_mem:
         (bwa mem \
             -t {threads} \
             {params.index} \
-            trimmed/{wildcards.accession}*.fastq \
+            results/data_retrieval/trimmed/{wildcards.accession}*.fastq \
             | samtools sort \
                 --threads {threads} \
                 --reference {input.fname_ref} \
@@ -244,17 +236,17 @@ rule bwa_mem:
 
         # delete used fastq files
         if [ {config[data_saver_mode]} == True ]; then
-            rm data/{wildcards.accession}*.fastq #data/{wildcards.accession}.marker
-            rm trimmed/{wildcards.accession}*.fastq #trimmed/{wildcards.accession}.marker
+            rm results/data_retrieval/data/{wildcards.accession}*.fastq #results/data_retrieval/data/{wildcards.accession}.marker
+            rm results/data_retrieval/trimmed/{wildcards.accession}*.fastq #results/data_retrieval/trimmed/{wildcards.accession}.marker
         fi
         """
 
 
 rule samtools_index:
     input:
-        'alignment/{accession}.cram'
+        'results/data_retrieval/alignment/{accession}.cram'
     output:
-        'alignment/{accession}.cram.crai'
+        'results/data_retrieval/alignment/{accession}.cram.crai'
     group: 'data_processing'
     priority: 3
     wrapper:
@@ -263,10 +255,10 @@ rule samtools_index:
 
 rule compute_coverage:
     input:
-        fname = 'alignment/{accession}.cram',
-        index = 'alignment/{accession}.cram.crai'
+        fname = 'results/data_retrieval/alignment/{accession}.cram',
+        index = 'results/data_retrieval/alignment/{accession}.cram.crai'
     output:
-        fname = 'coverage/coverage.{accession}.csv.gz'
+        fname = 'results/data_retrieval/coverage/coverage.{accession}.csv.gz'
     group: 'data_processing'
     priority: 3
     run:
@@ -290,14 +282,14 @@ rule compute_coverage:
 rule aggregate_results:
     input:
         fname_list = expand(
-            'coverage/coverage.{accession}.csv.gz',
+            'results/data_retrieval/coverage/coverage.{accession}.csv.gz',
             accession=accession_list)
     output:
-        fname = 'results/coverage.csv.gz',
-        fname_stats = report('results/statistics.csv.gz', caption='report/empty_caption.rst'),
-        fname_lowquar = 'results/coverage_lowerquartile.csv.gz',
-        fname_median = 'results/coverage_median.csv.gz',
-        fname_upperquar = 'results/coverage_upperquartile.csv.gz'
+        fname = 'results/data_retrieval/results/coverage.csv.gz',
+        fname_stats = report('results/data_retrieval/results/statistics.csv.gz', caption='report/empty_caption.rst'),
+        fname_lowquar = 'results/data_retrieval/results/coverage_lowerquartile.csv.gz',
+        fname_median = 'results/data_retrieval/results/coverage_median.csv.gz',
+        fname_upperquar = 'results/data_retrieval/results/coverage_upperquartile.csv.gz'
     benchmark:
         'benchmarks/aggregate_results.benchmark.txt'
     resources:
@@ -332,10 +324,10 @@ rule aggregate_results:
 
 rule plot_coverage_per_locus:
     input:
-        fname = 'results/coverage.csv.gz',
-        fname_selection = 'results/selected_samples.csv'
+        fname = 'results/data_retrieval/results/coverage.csv.gz',
+        fname_selection = 'results/data_retrieval/results/selected_samples.csv'
     output:
-        fname = report('plots/coverage_per_locus.pdf', caption='report/empty_caption.rst')
+        fname = report('results/data_retrieval/plots/coverage_per_locus.pdf', caption='report/empty_caption.rst')
     benchmark:
         'benchmarks/plot_coverage_per_locus.benchmark.txt'
     resources:
@@ -366,9 +358,9 @@ rule plot_coverage_per_locus:
         sel = pd.read_csv(input.fname_selection, squeeze=True)
         df_sub = df[sel]
 
-        df_genes = pd.read_csv('../../resources/references/genes.csv')
+        df_genes = pd.read_csv('resources/references/genes.csv')
         df_primers = pd.read_csv(
-            '../../resources/references/nCoV-2019.bed', sep='\t', header=None,
+            'resources/references/nCoV-2019.bed', sep='\t', header=None,
             names=['chrom', 'chromStart', 'chromEnd', 'name', 'foo', 'strand'])
 
         # compute data statistics
@@ -444,11 +436,11 @@ rule plot_coverage_per_locus:
 
 rule plot_coverage_per_sample:
     input:
-        fname_lowquar = 'results/coverage_lowerquartile.csv.gz',
-        fname_median = 'results/coverage_median.csv.gz',
-        fname_upperquar = 'results/coverage_upperquartile.csv.gz'
+        fname_lowquar = 'results/data_retrieval/results/coverage_lowerquartile.csv.gz',
+        fname_median = 'results/data_retrieval/results/coverage_median.csv.gz',
+        fname_upperquar = 'results/data_retrieval/results/coverage_upperquartile.csv.gz'
     output:
-        fname = report('plots/coverage_per_sample.pdf', caption='report/empty_caption.rst')
+        fname = report('results/data_retrieval/plots/coverage_per_sample.pdf', caption='report/empty_caption.rst')
     benchmark:
         'benchmarks/plot_coverage_per_sample.benchmark.txt'
     resources:
@@ -516,7 +508,7 @@ rule plot_coverage_per_sample:
 
 rule retrieve_sra_metadata:
     output:
-        fname = 'results/sra_metadata.csv.gz'
+        fname = 'results/data_retrieval/results/sra_metadata.csv.gz'
     benchmark:
         'benchmarks/retrieve_sra_metadata.benchmark.txt'
     run:
@@ -570,13 +562,13 @@ rule retrieve_sra_metadata:
 rule compute_additional_properties:
     input:
         fname_list = expand(
-            'alignment/{accession}.cram',
+            'results/data_retrieval/alignment/{accession}.cram',
             accession=accession_list),
         index_list = expand(
-            'alignment/{accession}.cram.crai',
+            'results/data_retrieval/alignment/{accession}.cram.crai',
             accession=accession_list)
     output:
-        fname = 'results/extra_properties.csv.gz'
+        fname = 'results/data_retrieval/results/extra_properties.csv.gz'
     benchmark:
         'benchmarks/compute_additional_properties.benchmark.txt'
     resources:
@@ -612,13 +604,13 @@ rule compute_additional_properties:
 
 rule assemble_final_dataframe:
     input:
-        fname_lowquar = 'results/coverage_lowerquartile.csv.gz',
-        fname_median = 'results/coverage_median.csv.gz',
-        fname_upperquar = 'results/coverage_upperquartile.csv.gz',
-        fname_extra = 'results/extra_properties.csv.gz',
-        fname_meta = 'results/sra_metadata.csv.gz'
+        fname_lowquar = 'results/data_retrieval/results/coverage_lowerquartile.csv.gz',
+        fname_median = 'results/data_retrieval/results/coverage_median.csv.gz',
+        fname_upperquar = 'results/data_retrieval/results/coverage_upperquartile.csv.gz',
+        fname_extra = 'results/data_retrieval/results/extra_properties.csv.gz',
+        fname_meta = 'results/data_retrieval/results/sra_metadata.csv.gz'
     output:
-        fname = report('results/final_dataframe.csv.gz')
+        fname = report('results/data_retrieval/results/final_dataframe.csv.gz')
     run:
         import pandas as pd
 
@@ -646,9 +638,9 @@ rule assemble_final_dataframe:
 
 rule select_samples:
     input:
-        fname = 'results/final_dataframe.csv.gz'
+        fname = 'results/data_retrieval/results/final_dataframe.csv.gz'
     output:
-        fname = report('results/selected_samples.csv', caption='report/empty_caption.rst')
+        fname = report('results/data_retrieval/results/selected_samples.csv', caption='report/empty_caption.rst')
     run:
         import pandas as pd
 
@@ -668,96 +660,3 @@ rule select_samples:
         with open(output.fname, 'w') as fd:
             fd.write('accession\n')
             fd.write('\n'.join(selection))
-
-
-rule prepare_vpipe_input:
-    input:
-        fname_selected = 'results/selected_samples.csv',
-        fname_final = 'results/final_dataframe.csv.gz'
-    output:
-        out_dir = directory('processed_fastq_data')
-    params:
-        max_batch_size = None
-    run:
-        import os
-        import collections
-        from pathlib import Path
-
-        import pandas as pd
-
-        from tqdm import tqdm
-
-        # read input
-        df = pd.read_csv(input.fname_selected)
-        accession_list = df['accession'].tolist()
-
-        df_final = pd.read_csv(input.fname_final, index_col=0)
-        readlen_dict = df_final.to_dict()['avg_read_length']
-
-        max_batch_size = params.max_batch_size
-
-        name_template = 'samples_{type_}'
-        if max_batch_size is not None:
-            name_template += '_batch{batch:02}'
-        dummy_date = '19700101'
-
-        target_dir = Path(output.out_dir)
-
-        # create batched output
-        current_batch_id = collections.defaultdict(int)
-        current_batch_size = collections.defaultdict(int)
-        for accession in tqdm(accession_list):
-            # gather fastq files
-            available_files = list(Path('data').glob(f'{accession}*.fastq'))
-
-            # detect type of experiment
-            if len(available_files) == 1:
-                # SE
-                type_ = 'SE'
-            elif len(available_files) == 2:
-                # PE
-                type_ = 'PE'
-            elif len(available_files) == 3:
-                # PE
-                type_ = 'PE'
-            else:
-                raise RuntimeError(available_files)
-
-            # assemble target names
-            name = name_template.format(
-                type_=type_,
-                batch=current_batch_id[type_])
-            target = target_dir / name / accession / dummy_date / 'raw_data'
-
-            target.mkdir(parents=True, exist_ok=True)
-
-            # copy/link fastq files
-            for path in available_files:
-                basename = path.name
-
-                if len(available_files) == 3:
-                    # if there is a varying number of reads per spot,
-                    # we only consider PE reads
-                    if '_1' not in basename and '_2' not in basename:
-                        print('skipping', path)
-                        continue
-
-                # make V-pipe recognize PE files
-                basename = basename.replace('_1', '_R1')
-                basename = basename.replace('_2', '_R2')
-
-                # create hard link
-                dest = target / basename
-                # print(accession, path, dest)
-
-                os.link(path, dest)
-
-            # add meta-info to tsv file
-            with open(target_dir / f'{name}.tsv', 'a') as fd:
-                fd.write(f'{accession}\t{dummy_date}\t{readlen_dict[accession]}\n')
-
-            # handle batches
-            current_batch_size[type_] += 1
-            if max_batch_size is not None and current_batch_size[type_] == max_batch_size:
-                current_batch_size[type_] = 0
-                current_batch_id[type_] += 1
