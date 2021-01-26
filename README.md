@@ -7,7 +7,7 @@ A Snakemake workflow for large-scale SARS-CoV-2 analyses.
 First, clone the repository:
 
 ```bash
-$ git clone --recurse-submodules https://github.com/cbg-ethz/SARS-CoV-2_Analysis
+$ git clone https://github.com/cbg-ethz/SARS-CoV-2_Analysis
 ```
 
 If needed, search for new samples using `QuerySRAAccessions.ipynb`.
