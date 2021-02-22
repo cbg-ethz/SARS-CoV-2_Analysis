@@ -66,7 +66,7 @@ rule download_fastq:
 
         # delete output files if they already exist
         # because fasterq-dump crashes otherwise
-        for path in outdir.glob(f"{wildcards.accession}*.fastq"):
+        for path in outdir.glob(f'{wildcards.accession}*.fastq'):
             path.unlink(missing_ok=True)
 
         # commence download
