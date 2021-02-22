@@ -44,7 +44,8 @@ if config['job_grouping_mode']:
 # workflow
 rule download_fastq:
     output:
-        fname_marker = touch('results/data_retrieval/data/{accession}.marker')
+        fname_marker = touch('results/data_retrieval/data/{accession}.marker'),
+        temp_dir = temp(directory('results/data_retrieval/data/tmp.{accession}'))
     params:
         restart_times = 10
     log:
@@ -62,7 +63,6 @@ rule download_fastq:
         from pathlib import Path
 
         outdir = Path(os.path.dirname(output.fname_marker))
-        tmpdir = Path(os.path.join(outdir, f'tmp.{wildcards.accession}'))
 
         # delete output files if they already exist
         # because fasterq-dump crashes otherwise
@@ -78,7 +78,7 @@ rule download_fastq:
                     ' --threads {threads}'
                     ' -p'  # --progress
                     ' --outdir {outdir}'
-                    ' --temp {tmpdir}'
+                    ' --temp {output.temp_dir}'
                     ' {wildcards.accession}'
                     ' > >(tee {log.outfile}) 2>&1'
                 )
