@@ -86,10 +86,7 @@ def main(
     ax_coverage = ax_vcf.twinx()
 
     ax_coverage.fill_between(
-        df_coverage.index,
-        df_coverage[accession],
-        alpha=0.3,
-        color='#88bae3',
+        df_coverage.index, df_coverage[accession], alpha=0.3, color='#88bae3'
     )
     ax_coverage.set_ylabel('Coverage', color='#88bae3')
     ax_coverage.tick_params(axis='y', labelcolor='#88bae3')
