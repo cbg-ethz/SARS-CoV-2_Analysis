@@ -18,4 +18,4 @@ The whole analysis can then be reproduced by executing the following line:
 $ ./run_pipeline.sh
 ```
 
-This will download the reads, run V-pipe, and plot the summary figures.
+This will download the reads, compute coverages, call variants, and plot summary figures.
