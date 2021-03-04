@@ -2,14 +2,16 @@
 
 bsub \
   -N \
-  -R 'rusage[mem=10000]' \
+  -R 'rusage[mem=15000]' \
   -q normal.120h \
   -oo snake.out -eo snake.err \
 snakemake \
   --profile lsf \
   -pr \
   --use-conda \
-  --cores 100 \
+  --cores 200 \
   --local-cores 1 \
   --latency-wait 30 \
+  --keep-going \
+  --show-failed-logs \
   "$@"
