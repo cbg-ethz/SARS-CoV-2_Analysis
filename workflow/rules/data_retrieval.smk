@@ -599,6 +599,8 @@ rule compute_additional_properties:
                 'avg_read_length': read_len
             })
 
+            cram.close()
+
         pd.DataFrame(tmp).to_csv(output.fname, index=False)
 
 
