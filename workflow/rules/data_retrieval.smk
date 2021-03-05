@@ -11,7 +11,7 @@ accession_list = pd.read_csv(config['sample_accession_file'])['accession'].tolis
 # job grouping requires execution dependent resources
 job_resources = {
     'download_fastq': {
-        'mem_mb': 5_000,
+        'mem_mb': 1_000,
         'threads': 6
     },
     'vpipe_trim': {
@@ -19,7 +19,7 @@ job_resources = {
         'threads': 1
     },
     'bwa_mem': {
-        'mem_mb': 16_000,
+        'mem_mb': 4_000,
         'threads': 8
     }
 }
