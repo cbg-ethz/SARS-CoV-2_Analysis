@@ -293,12 +293,13 @@ rule aggregate_results:
     benchmark:
         'benchmarks/aggregate_results.benchmark.txt'
     resources:
-        mem_mb = 20_000
+        mem_mb = 40_000
     run:
         import pandas as pd
+        from tqdm import tqdm
 
         df_list = []
-        for fname in input.fname_list:
+        for fname in tqdm(input.fname_list):
             tmp = pd.read_csv(fname)
             df_list.append(tmp)
         df = pd.concat(df_list, axis=1)
@@ -572,7 +573,7 @@ rule compute_additional_properties:
     benchmark:
         'benchmarks/compute_additional_properties.benchmark.txt'
     resources:
-        mem_mb = 10_000
+        mem_mb = 20_000
     run:
         import os
         import glob
@@ -613,6 +614,8 @@ rule assemble_final_dataframe:
         fname_meta = 'results/data_retrieval/results/sra_metadata.csv.gz'
     output:
         fname = report('results/data_retrieval/results/final_dataframe.csv.gz')
+    resources:
+        mem_mb = 20_000
     run:
         import pandas as pd
 
@@ -643,6 +646,8 @@ rule select_samples:
         fname = 'results/data_retrieval/results/final_dataframe.csv.gz'
     output:
         fname = report('results/data_retrieval/results/selected_samples.csv', caption='report/empty_caption.rst')
+    resources:
+        mem_mb = 20_000
     run:
         import pandas as pd
 
