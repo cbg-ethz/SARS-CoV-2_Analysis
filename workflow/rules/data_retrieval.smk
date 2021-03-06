@@ -285,54 +285,43 @@ rule aggregate_results:
             'results/data_retrieval/coverage/coverage.{accession}.csv.gz',
             accession=accession_list)
     output:
-        fname = 'results/data_retrieval/results/coverage.csv.gz',
-        fname_stats = report('results/data_retrieval/results/statistics.csv.gz', caption='report/empty_caption.rst'),
-        fname_lowquar = 'results/data_retrieval/results/coverage_lowerquartile.csv.gz',
-        fname_median = 'results/data_retrieval/results/coverage_median.csv.gz',
-        fname_upperquar = 'results/data_retrieval/results/coverage_upperquartile.csv.gz'
+        fname = 'results/data_retrieval/results/coverage_quantiles.csv.gz',
     benchmark:
         'benchmarks/aggregate_results.benchmark.txt'
+    params:
+        quantile_list = [0.25, 0.5, 0.75]
     resources:
-        mem_mb = 40_000
+        mem_mb = 15_000
     run:
+        from pathlib import Path
         import pandas as pd
         from tqdm import tqdm
 
-        df_list = []
+        tmp = []
         for fname in tqdm(input.fname_list):
-            tmp = pd.read_csv(fname)
-            df_list.append(tmp)
-        df = pd.concat(df_list, axis=1)
+            accession = Path(fname).stem.split('.')[1]
+            df_tmp = pd.read_csv(fname, squeeze=True)
 
-        # save data and basic statistics
-        df.to_csv(output.fname, index=False)
-        df.describe().to_csv(output.fname_stats)
+            tmp.append({
+                'accession': accession,
+                **{f'q{q}': df_tmp.quantile(q=q) for q in params.quantile_list}
+            })
 
-        # save useful metrics
-        (pd.melt(df).groupby('variable')
-                    .quantile(q=.25)
-                    .sort_values('value')
-                    .to_csv(output.fname_lowquar))
-        (pd.melt(df).groupby('variable')
-                    .quantile(q=.5)
-                    .sort_values('value')
-                    .to_csv(output.fname_median))
-        (pd.melt(df).groupby('variable')
-                    .quantile(q=.75)
-                    .sort_values('value')
-                    .to_csv(output.fname_upperquar))
+        pd.DataFrame(tmp).sort_values('accession').to_csv(output.fname, index=False)
 
 
 rule plot_coverage_per_locus:
     input:
-        fname = 'results/data_retrieval/results/coverage.csv.gz',
+        unpack(lambda wildcards: {f'fname_coverage_{accession}': f'results/data_retrieval/coverage/coverage.{accession}.csv.gz' for accession in accession_list}),
         fname_selection = 'results/data_retrieval/results/selected_samples.csv'
     output:
         fname = report('results/data_retrieval/plots/coverage_per_locus.pdf', caption='report/empty_caption.rst')
     benchmark:
         'benchmarks/plot_coverage_per_locus.benchmark.txt'
+    params:
+        target_sample_num = 50_000
     resources:
-        mem_mb = 5_000
+        mem_mb = 30_000
     run:
         import itertools
 
@@ -355,9 +344,13 @@ rule plot_coverage_per_locus:
             return list(itertools.chain(*[items[i::ncol] for i in range(ncol)]))
 
         # read data
-        df = pd.read_csv(input.fname)
-        sel = pd.read_csv(input.fname_selection, squeeze=True)
-        df_sub = df[sel]
+        selected_samples = pd.read_csv(input.fname_selection, squeeze=True)
+        sample_freq = max(1, selected_samples.shape[0] // params.target_sample_num)
+
+        cov_list = []
+        for accession in selected_samples[::sample_freq]:
+            cov_list.append(pd.read_csv(input[f'fname_coverage_{accession}']))
+        df_cov = pd.concat(cov_list, axis=1)
 
         df_genes = pd.read_csv('resources/references/genes.csv')
         df_primers = pd.read_csv(
@@ -366,9 +359,9 @@ rule plot_coverage_per_locus:
 
         # compute data statistics
         df_stats = pd.DataFrame({
-            'lower quartile': df_sub.quantile(q=.25, axis=1),
-            'median': df_sub.quantile(q=.5, axis=1),
-            'upper quartile': df_sub.quantile(q=.75, axis=1)
+            'lower quartile': df_cov.quantile(q=.25, axis=1),
+            'median': df_cov.quantile(q=.5, axis=1),
+            'upper quartile': df_cov.quantile(q=.75, axis=1)
         })
 
         # prepare primers
@@ -392,7 +385,7 @@ rule plot_coverage_per_locus:
                 start=x.start, end=x.end, color=x.color),
             axis=1).tolist()
 
-        record = GraphicRecord(sequence_length=df.shape[0], features=features)
+        record = GraphicRecord(sequence_length=df_cov.shape[0], features=features)
         record.plot(ax=ax_genes, with_ruler=False)
 
         legend_elements = df_genes.apply(
@@ -437,13 +430,13 @@ rule plot_coverage_per_locus:
 
 rule plot_coverage_per_sample:
     input:
-        fname_lowquar = 'results/data_retrieval/results/coverage_lowerquartile.csv.gz',
-        fname_median = 'results/data_retrieval/results/coverage_median.csv.gz',
-        fname_upperquar = 'results/data_retrieval/results/coverage_upperquartile.csv.gz'
+        fname = 'results/data_retrieval/results/coverage_quantiles.csv.gz',
     output:
         fname = report('results/data_retrieval/plots/coverage_per_sample.pdf', caption='report/empty_caption.rst')
     benchmark:
         'benchmarks/plot_coverage_per_sample.benchmark.txt'
+    params:
+        target_sample_num = 1000
     resources:
         mem_mb = 5_000
     run:
@@ -459,27 +452,27 @@ rule plot_coverage_per_sample:
         matplotlib.use('Agg')
 
         # read data
-        df_lq = pd.read_csv(input.fname_lowquar, index_col=0)
-        df_mq = pd.read_csv(input.fname_median, index_col=0)
-        df_uq = pd.read_csv(input.fname_upperquar, index_col=0)
+        df = pd.read_csv(
+            input.fname, index_col='accession',
+            low_memory=False
+        ).sort_values('q0.5')
+
+        # subsample data for performant plot
+        sample_freq = max(1, df.shape[0] // params.target_sample_num)
+        df = df.iloc[::sample_freq]
 
         # plot data
-        accession_order = df_mq.sort_values('value').index.tolist()
-
         plt.figure(figsize=(10, 6))
 
         plt.plot(
-            accession_order,
-            df_mq.loc[accession_order, 'value'],
+            df['q0.5'],
             label='median')
         plt.plot(
-            accession_order,
-            df_lq.loc[accession_order, 'value'],
+            df['q0.25'],
             alpha=.5,
             label='lower quartile')
         plt.plot(
-            accession_order,
-            df_uq.loc[accession_order, 'value'],
+            df['q0.75'],
             alpha=.5,
             label='upper quartile')
 
@@ -607,33 +600,31 @@ rule compute_additional_properties:
 
 rule assemble_final_dataframe:
     input:
-        fname_lowquar = 'results/data_retrieval/results/coverage_lowerquartile.csv.gz',
-        fname_median = 'results/data_retrieval/results/coverage_median.csv.gz',
-        fname_upperquar = 'results/data_retrieval/results/coverage_upperquartile.csv.gz',
+        fname_quantiles = 'results/data_retrieval/results/coverage_quantiles.csv.gz',
         fname_extra = 'results/data_retrieval/results/extra_properties.csv.gz',
         fname_meta = 'results/data_retrieval/results/sra_metadata.csv.gz'
     output:
         fname = report('results/data_retrieval/results/final_dataframe.csv.gz')
     resources:
-        mem_mb = 20_000
+        mem_mb = 40_000
     run:
         import pandas as pd
 
         # read data
-        df_lq = pd.read_csv(input.fname_lowquar, index_col='variable')
-        df_mq = pd.read_csv(input.fname_median, index_col='variable')
-        df_uq = pd.read_csv(input.fname_upperquar, index_col='variable')
+        df_quantiles = pd.read_csv(input.fname_quantiles, index_col='accession', low_memory=False)
 
         df_extra = pd.read_csv(input.fname_extra, index_col='accession')
         df_meta = pd.read_csv(input.fname_meta, index_col='run_accession')
 
-        assert sorted(df_lq.index) == sorted(df_mq.index) == sorted(df_uq.index) == sorted(df_extra.index) == sorted(df_meta.index)
+        assert sorted(df_quantiles.index) == sorted(df_extra.index) == sorted(df_meta.index)
 
         # merge data
         df_merge = pd.concat([
-            df_lq.rename(columns={'value': 'per_base_read_count_lower_quartile'}),
-            df_mq.rename(columns={'value': 'per_base_read_count_median'}),
-            df_uq.rename(columns={'value': 'per_base_read_count_upper_quartile'}),
+            df_quantiles.rename(columns={
+                'q0.25': 'per_base_read_count_lower_quartile',
+                'q0.5': 'per_base_read_count_median',
+                'q0.75': 'per_base_read_count_upper_quartile'
+            }),
             df_extra,
             df_meta
         ], axis=1)
