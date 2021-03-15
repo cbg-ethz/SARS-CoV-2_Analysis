@@ -228,6 +228,10 @@ rule bwa_mem:
     priority: 2
     shell:
         """
+        # remove (potential) left over files from previous runs
+        rm -f {output.fname_cram}*
+
+        # run alignment
         (bwa mem \
             -t {threads} \
             {params.index} \
