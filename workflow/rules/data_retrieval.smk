@@ -72,6 +72,11 @@ rule download_fastq:
         # commence download
         counter = 0
         while True:
+            if counter > 0:
+                # turns out that fasterq-dump crashes for some accessions
+                # when using more than 1 thread
+                threads = 1
+
             try:
                 shell(
                     'fasterq-dump'
