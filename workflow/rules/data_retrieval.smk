@@ -229,7 +229,7 @@ rule bwa_mem:
     shell:
         """
         # remove (potential) left over files from previous runs
-        rm -f {output.fname_cram}*
+        rm -vf "{output.fname_cram}.tmp."*".bam"
 
         # run alignment
         (bwa mem \
