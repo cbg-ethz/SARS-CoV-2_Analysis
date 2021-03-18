@@ -515,6 +515,8 @@ rule retrieve_sra_metadata:
     benchmark:
         'benchmarks/retrieve_sra_metadata.benchmark.txt'
     run:
+        import json
+
         import pandas as pd
         from tqdm import tqdm
 
@@ -536,8 +538,8 @@ rule retrieve_sra_metadata:
                     tmp = db.sra_metadata(sub_list, detailed=True)
                     df_list.append(tmp)
                     break
-                except KeyError:
-                    print('Woopsie starting with', sub_list[0])
+                except (KeyError, json.JSONDecodeError) as e:
+                    print(f'Woopsie ({e}) starting with', sub_list[0])
                     continue
 
         df_meta = pd.concat(df_list)
