@@ -520,6 +520,7 @@ rule retrieve_sra_metadata:
         import pandas as pd
         from tqdm import tqdm
 
+        import requests
         from pysradb.sraweb import SRAweb
 
         # chunks are necessary because `SRAweb` crashes otherwise
@@ -538,7 +539,11 @@ rule retrieve_sra_metadata:
                     tmp = db.sra_metadata(sub_list, detailed=True)
                     df_list.append(tmp)
                     break
-                except (KeyError, json.JSONDecodeError) as e:
+                except (
+                    KeyError,
+                    json.JSONDecodeError,
+                    requests.exceptions.ProxyError
+                ) as e:
                     print(f'Woopsie ({e}) starting with', sub_list[0])
                     continue
 
