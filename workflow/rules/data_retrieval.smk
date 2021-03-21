@@ -579,7 +579,7 @@ rule compute_additional_properties:
         'benchmarks/compute_additional_properties.benchmark.txt'
     threads: 32
     resources:
-        mem_mb = 1_000
+        mem_mb = 1_500
     run:
         import os
         import glob
