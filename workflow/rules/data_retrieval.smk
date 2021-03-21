@@ -577,21 +577,23 @@ rule compute_additional_properties:
         fname = 'results/data_retrieval/results/extra_properties.csv.gz'
     benchmark:
         'benchmarks/compute_additional_properties.benchmark.txt'
+    threads: 32
     resources:
-        mem_mb = 20_000
+        mem_mb = 1_000
     run:
         import os
         import glob
 
         import numpy as np
         import pandas as pd
+        from joblib import Parallel, delayed
 
         import pysam
-        from tqdm import tqdm
 
-        tmp = []
-        for fname in tqdm(input.fname_list):
+        def compute_properties(fname):
             accession = os.path.splitext(os.path.basename(fname))[0]
+
+            # compute mean read length
             cram = pysam.AlignmentFile(fname, 'rc')
 
             read_len = np.mean(
@@ -600,14 +602,19 @@ rule compute_additional_properties:
                  if read.infer_read_length() is not None]
             ).astype(int)
 
-            tmp.append({
-                'accession': accession,
-                'avg_read_length': read_len
-            })
-
             cram.close()
 
-        pd.DataFrame(tmp).to_csv(output.fname, index=False)
+            # return result
+            return {
+                'accession': accession,
+                'avg_read_length': read_len
+            }
+
+        result = Parallel(n_jobs=threads)(
+            delayed(compute_properties)(fname) for fname in input.fname_list
+        )
+
+        pd.DataFrame(result).to_csv(output.fname, index=False)
 
 
 rule assemble_final_dataframe:
