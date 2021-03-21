@@ -514,6 +514,8 @@ rule retrieve_sra_metadata:
         fname = 'results/data_retrieval/results/sra_metadata.csv.gz'
     benchmark:
         'benchmarks/retrieve_sra_metadata.benchmark.txt'
+    resources:
+        mem_mb = 10_000
     run:
         import json
 
