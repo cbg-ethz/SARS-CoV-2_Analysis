@@ -300,7 +300,7 @@ rule aggregate_results:
     params:
         quantile_list = [0.25, 0.5, 0.75]
     resources:
-        mem_mb = 15_000
+        mem_mb = 20_000
     run:
         from pathlib import Path
         import pandas as pd
