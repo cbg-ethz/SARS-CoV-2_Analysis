@@ -539,11 +539,7 @@ rule retrieve_sra_metadata:
                     tmp = db.sra_metadata(sub_list, detailed=True)
                     df_list.append(tmp)
                     break
-                except (
-                    KeyError,
-                    json.JSONDecodeError,
-                    requests.exceptions.ProxyError
-                ) as e:
+                except Exception as e:
                     print(f'Woopsie ({e}) starting with', sub_list[0])
                     continue
 
