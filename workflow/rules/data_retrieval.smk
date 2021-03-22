@@ -512,21 +512,21 @@ rule plot_coverage_per_sample:
 rule retrieve_sra_metadata:
     output:
         fname = 'results/data_retrieval/results/sra_metadata.csv.gz'
+    params:
+        chunk_size = 200  # chunks are necessary because `SRAweb` crashes otherwise
     benchmark:
         'benchmarks/retrieve_sra_metadata.benchmark.txt'
+    threads: 32
     resources:
-        mem_mb = 10_000
+        mem_mb = 500
     run:
         import json
 
         import pandas as pd
-        from tqdm import tqdm
+        from pqdm.threads import pqdm
 
         import requests
         from pysradb.sraweb import SRAweb
-
-        # chunks are necessary because `SRAweb` crashes otherwise
-        chunk_size = 200
 
         def chunker(seq, size):
             return list(seq[pos:pos + size] for pos in range(0, len(seq), size))
@@ -534,16 +534,18 @@ rule retrieve_sra_metadata:
         # query SRA
         db = SRAweb()
 
-        df_list = []
-        for sub_list in tqdm(chunker(accession_list, chunk_size)):
+        def retrieve(chunk_list):
             while True:  # save us from network issues
                 try:
-                    tmp = db.sra_metadata(sub_list, detailed=True)
-                    df_list.append(tmp)
-                    break
+                    return db.sra_metadata(chunk_list, detailed=True)
                 except Exception as e:
-                    print(f'Woopsie ({e}) starting with', sub_list[0])
-                    continue
+                    print(f'Woopsie ({e}) starting with', chunk_list[0])
+
+        df_list = pqdm(
+            chunker(accession_list, params.chunk_size),
+            retrieve,
+            n_jobs=threads,
+        )
 
         df_meta = pd.concat(df_list).drop_duplicates()
         assert set(df_meta['run_accession'].tolist()) == set(accession_list), df_meta.shape
