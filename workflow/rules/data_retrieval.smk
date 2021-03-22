@@ -219,6 +219,8 @@ rule bwa_mem:
         index = 'results/data_retrieval/references/reference',
         sort = 'samtools',
         sort_order = 'coordinate',
+    benchmark:
+        'benchmarks/bwa_mem.{accession}.benchmark.txt'
     resources:
         mem_mb = job_resources['bwa_mem']['mem_mb']
     threads: job_resources['bwa_mem']['threads']
@@ -268,6 +270,8 @@ rule compute_coverage:
         index = 'results/data_retrieval/alignment/{accession}.cram.crai'
     output:
         fname = 'results/data_retrieval/coverage/coverage.{accession}.csv.gz'
+    benchmark:
+        'benchmarks/compute_coverage.{accession}.benchmark.txt'
     group: 'data_processing'
     priority: 3
     run:

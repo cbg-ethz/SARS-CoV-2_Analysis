@@ -7,6 +7,8 @@ rule lofreq:
         fname_vcf = 'results/variant_calling/calls/{accession}.vcf',
         fname_bam = temp('results/variant_calling/calls/{accession}.bam'),
         fname_bai = temp('results/variant_calling/calls/{accession}.bam.bai'),
+    benchmark:
+        'benchmarks/lofreq.{accession}.benchmark.txt'
     conda:
         '../envs/variant_calling.yaml'
     threads: 8
