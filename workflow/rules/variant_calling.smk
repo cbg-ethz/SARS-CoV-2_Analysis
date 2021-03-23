@@ -7,6 +7,7 @@ rule lofreq:
         fname_vcf = 'results/variant_calling/calls/{accession}.vcf',
         fname_bam = temp('results/variant_calling/calls/{accession}.bam'),
         fname_bai = temp('results/variant_calling/calls/{accession}.bam.bai'),
+        fname_temp = temp('results/variant_calling/calls/temp/{accession}.another.bam'),
     benchmark:
         'benchmarks/lofreq.{accession}.benchmark.txt'
     conda:
@@ -27,14 +28,14 @@ rule lofreq:
             -f {input.reference} \
             --dindel \
             - \
-        > {output.fname_bam}
+        > {output.fname_temp}
 
         # TODO: can I not pipe into this?
         lofreq alnqual \
             -b \
-            {output.fname_bam} \
+            {output.fname_temp} \
             {input.reference} \
-        | sponge {output.fname_bam}
+        > {output.fname_bam}
 
         samtools index {output.fname_bam}
 
