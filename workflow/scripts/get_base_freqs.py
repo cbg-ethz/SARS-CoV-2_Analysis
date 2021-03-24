@@ -16,6 +16,8 @@ delCoverageThreshold = 0  # by default deletions with any coverage are used
 delThreshold = 0.0  # by default deletions at all frequencies are used
 delThreshold = snakemake.config['params']['deletion_threshold']
 delCoverageThreshold = snakemake.config['params']['deletion_coverage_threshold']
+inCoverageThreshold = delCoverageThreshold
+inThreshold = delThreshold
 # list = sys.argv[4]
 # usedSamples = []
 
@@ -43,6 +45,8 @@ outFile.write(
     + "\t"
     + "REF_BASE"
     + "\t"
+    + "ALT_BASE"
+    + "\t"
     + "(ADJUSTED_)READ_COUNT"
     + "\t"
     + "A_freq"
@@ -54,6 +58,8 @@ outFile.write(
     + "T_freq"
     + "\t"
     + "DEL_freq"
+    + "\t"
+    + "IN_freq"
     + "\n"
 )
 print(outFileName)
@@ -76,6 +82,7 @@ for file in fileList:
     # sampleDate = file.split('/')[2]
     posBaseCounts = {}  # pos -> base counts
     refBaseAtPos = {}  # pos -> refBase
+    altBaseAtPos = {}  # pos -> refBase
     postProbs = {}
     prevLine = ""
 
@@ -93,20 +100,37 @@ for file in fileList:
             altBase = elems[4]
             refBase = elems[3]
             refBaseAtPos[pos] = refBase
+            altBaseAtPos[pos] = altBase
             info = elems[7].split(';')
-            Fvar = elems[7].split("Fvar=")[1].split(";")[0]
-            Rvar = elems[7].split("Rvar=")[1].split(";")[0]
-            Ftot = elems[7].split("Ftot=")[1].split(";")[0]
-            Rtot = elems[7].split("Rtot=")[1].split(";")[0]
+            if 'DP4' in elems[7]:
+                # Counts for ref-forward bases, ref-reverse, alt-forward and alt-reverse bases
+                counts = [int(j) for i in info for j in i[4:].split(',') 
+                    if i.startswith('DP4=')]
+                Fvar = counts[2]
+                Rvar = counts[3]
+                Ftot = Fvar + counts[0]
+                Rtot = Rvar + counts[1]
+            else:
+                Fvar = elems[7].split("Fvar=")[1].split(";")[0]
+                Rvar = elems[7].split("Rvar=")[1].split(";")[0]
+                Ftot = elems[7].split("Ftot=")[1].split(";")[0]
+                Rtot = elems[7].split("Rtot=")[1].split(";")[0]
             total = int(Ftot) + int(Rtot)
             altTotal = int(Fvar) + int(Rvar)
             mutFreq = float(altTotal) / float(total)
 
             if pos not in posBaseCounts:
                 baseCounts = dict(
-                    [('A', 0), ('C', 0), ('G', 0), ('T', 0), ('-', 0), ('Total', 0)]
+                    [('A', 0), ('C', 0), ('G', 0), ('T', 0), ('-', 0), ('+', 0), ('Total', 0)]
                 )
                 posBaseCounts[pos] = baseCounts
+
+            # Deletion
+            if len(refBase) > len(altBase):
+                altBase = '-'
+            # Insertion
+            elif len(altBase) > len(refBase):
+                altBase = '+'
 
             ## some checks that read counts in multiple rows refering to same position make sense
             if posBaseCounts[pos][altBase] != 0:
@@ -143,6 +167,7 @@ for file in fileList:
             + posBaseCounts[pos]['G']
             + posBaseCounts[pos]['T']
             + posBaseCounts[pos]['-']
+            + posBaseCounts[pos]['+']
         )
         posBaseCounts[pos][refBaseAtPos[int(pos)]] = refCount
 
@@ -169,6 +194,21 @@ for file in fileList:
         if not useDel:
             totalConsidered = posBaseCounts[pos]['Total'] - posBaseCounts[pos]['-']
 
+        ## check if insertion makes the threshold at this postion
+        useIn = True
+        if (
+            float(posBaseCounts[pos]['+']) / float(posBaseCounts[pos]['Total'])
+            <= inThreshold
+        ):
+            useIn = False
+        if posBaseCounts[pos]['Total'] <= inCoverageThreshold:
+            useIn = False
+
+        ## if we don't consider the insertion, update total considered read counts
+        totalConsidered = posBaseCounts[pos]['Total']
+        if not useIn:
+            totalConsidered = posBaseCounts[pos]['Total'] - posBaseCounts[pos]['+']
+
         ## check if we should skip this position
         if totalConsidered == 0:  # no reads left after removing deletion
             continue
@@ -176,6 +216,7 @@ for file in fileList:
             posBaseCounts[pos][refBase] == totalConsidered
         ):  # no mutation left after removing deletions
             continue
+
 
         # compute variant frequencies from base counts
         baseFreqStats = (
@@ -194,8 +235,16 @@ for file in fileList:
             )
         else:
             baseFreqStats += "\t" + "0"
+        if useIn:
+            baseFreqStats += "\t" + str(
+                float(posBaseCounts[pos]['+']) / float(totalConsidered)
+            )
+        else:
+            baseFreqStats += "\t" + "0"
 
-        posInfo = sampleName + "\t" + str(pos) + "\t" + refBaseAtPos[pos]
+
+        posInfo = sampleName + "\t" + str(pos) + "\t" + refBaseAtPos[pos] \
+            + "\t" + altBaseAtPos[pos]
         outFile.write(
             posInfo + "\t" + str(totalConsidered) + "\t" + baseFreqStats + "\n"
         )
