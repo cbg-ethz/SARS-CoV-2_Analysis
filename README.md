@@ -1,5 +1,7 @@
 # SARS-CoV-2_Analysis
 
+[![Mega-Linter](https://github.com/cbg-ethz/SARS-CoV-2_Analysis/workflows/Mega-Linter/badge.svg?branch=master)](https://github.com/cbg-ethz/SARS-CoV-2_Analysis/actions?query=workflow%3AMega-Linter+branch%3Amaster)
+
 A Snakemake workflow for large-scale SARS-CoV-2 analyses.
 
 ## Usage
