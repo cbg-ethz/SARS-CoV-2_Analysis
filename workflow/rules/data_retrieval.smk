@@ -542,7 +542,7 @@ rule retrieve_sra_metadata:
             while True:  # save us from network issues
                 try:
                     return db.sra_metadata(chunk_list, detailed=True)
-                except Exception as e:
+                except (SystemExit, Exception) as e:
                     print(f'Woopsie ({e}) starting with', chunk_list[0])
 
         df_list = pqdm(
