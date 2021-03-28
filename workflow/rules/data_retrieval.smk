@@ -551,7 +551,7 @@ rule retrieve_sra_metadata:
             n_jobs=threads,
         )
 
-        df_meta = pd.concat(df_list).drop_duplicates()
+        df_meta = pd.concat(df_list)
         assert set(df_meta['run_accession'].tolist()) == set(accession_list), df_meta.shape
 
         # engineer additional features
