@@ -527,7 +527,7 @@ rule retrieve_sra_metadata:
     output:
         fname='results/data_retrieval/results/sra_metadata.csv.gz',
     params:
-        chunk_size=200, # chunks are necessary because `SRAweb` crashes otherwise
+        chunk_size=200,  # chunks are necessary because `SRAweb` crashes otherwise
     benchmark:
         'benchmarks/retrieve_sra_metadata.benchmark.txt'
     threads: 32
