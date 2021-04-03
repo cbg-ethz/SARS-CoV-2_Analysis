@@ -25,12 +25,14 @@ rule lofreq:
         samtools view \
             -b \
             -T {input.reference} \
+            --threads {threads} \
             {input.cram} \
         | lofreq viterbi \
             -f {input.reference} \
             - \
         | samtools sort \
             -T {output.temp_dir} \
+            --threads {threads} \
             - \
         | lofreq indelqual \
             -f {input.reference} \
@@ -45,7 +47,7 @@ rule lofreq:
             {input.reference} \
         > {output.fname_bam}
 
-        samtools index {output.fname_bam}
+        samtools index -@ {threads} {output.fname_bam}
 
         lofreq call-parallel \
             --pp-threads {threads} \
