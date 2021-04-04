@@ -63,6 +63,7 @@ rule gather_vcf_files:
         fname_list=expand(
             'results/variant_calling/calls/{accession}.vcf', accession=accession_list
         ),
+        fname_samples='results/data_retrieval/results/selected_samples.csv',
     output:
         fname='results/variant_calling/vcf_data.csv',
     script:
