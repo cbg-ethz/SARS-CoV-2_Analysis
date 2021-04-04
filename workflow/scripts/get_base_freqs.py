@@ -10,6 +10,8 @@ import sys
 import os
 import glob
 
+import pandas as pd
+
 
 collectionName = os.path.dirname(snakemake.input["fname_list"][0])
 delCoverageThreshold = 0  # by default deletions with any coverage are used
@@ -18,17 +20,12 @@ delThreshold = snakemake.config["params"]["deletion_threshold"]
 delCoverageThreshold = snakemake.config["params"]["deletion_coverage_threshold"]
 inCoverageThreshold = delCoverageThreshold
 inThreshold = delThreshold
-# list = sys.argv[4]
-# usedSamples = []
 
 
-# f = open(list,'r')
-# lines = f.readlines()[1:]
-# f.close()
-
-# for line in lines:
-#    usedSamples.append(line.split(',')[0])
-# print len(usedSamples)
+df_samples = pd.read_csv(snakemake.input["fname_samples"])
+usedSamples = df_samples["accession"].tolist()
+total_sample_count = len(snakemake.input["fname_list"])
+print(f"Parsing {len(usedSamples)}/{total_sample_count} samples")
 
 
 delFilter = ""
@@ -75,9 +72,8 @@ for file in fileList:
         sampleName = sampleName[:-4]  # remove file extension to get sample name
     if sampleName.startswith("snvs_"):
         sampleName = sampleName[5:]
-    # if sampleName not in usedSamples:
-    #    print sampleName
-    #    continue
+    if sampleName not in usedSamples:
+        continue
     usedFiles += 1
     # sampleDate = file.split('/')[2]
     posBaseCounts = {}  # pos -> base counts
