@@ -705,7 +705,7 @@ rule select_samples:
         # read data
         df = pd.read_csv(input.fname, index_col=0)
 
-        # apply thresholds
+        # apply filters
         df_sub = df[
             (df['per_base_read_count_median'] >= config['thresholds']['median_minium'])
             & (
@@ -716,9 +716,15 @@ rule select_samples:
                 df['per_base_read_count_upper_quartile']
                 <= config['thresholds']['quartile_range'][1]
             )
+            & (df['library_strategy'].isin(['AMPLICON', 'RNA-Seq']))
+            & (df['library_source'].isin(['VIRAL RNA', 'TRANSCRIPTOMIC']))
+            & (df['host'].isin(['Homo sapiens']) | df['host'].isna())
         ]
 
         selection = df_sub.index.tolist()
+
+        # summary
+        print(f'Selected {df_sub.shape[0]}/{df.shape[0]} samples')
 
         # save results
         with open(output.fname, 'w') as fd:
