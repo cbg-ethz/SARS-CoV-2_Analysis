@@ -11,6 +11,7 @@ import os
 import glob
 
 import pandas as pd
+from tqdm import tqdm
 
 
 collectionName = os.path.dirname(snakemake.input["fname_list"][0])
@@ -65,7 +66,7 @@ pattern = collectionName + "/*.vcf"  # all files matching this pattern are proce
 fileList = glob.glob(pattern)
 
 usedFiles = 0
-for file in fileList:
+for file in tqdm(fileList):
     countMuts = 0
     sampleName = os.path.basename(file)
     if sampleName.endswith(".vcf"):
