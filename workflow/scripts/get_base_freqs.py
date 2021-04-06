@@ -181,7 +181,13 @@ for file in fileList:
 
         ## another check that read counts make sense
         if refCount < 0:
-            print("ERROR: NEGATIVE REF COUNT AT POSITION " + pos + " in " + file + ":")
+            print(
+                "ERROR: NEGATIVE REF COUNT AT POSITION "
+                + str(pos)
+                + " in "
+                + file
+                + ":"
+            )
             print(posBaseCounts[pos])
 
     ## write base frequencies to output file
