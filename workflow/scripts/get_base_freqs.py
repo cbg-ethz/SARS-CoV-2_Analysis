@@ -16,6 +16,8 @@ import glob
 import pandas as pd
 from tqdm import tqdm
 
+INDEL_COLS = 10
+
 
 def get_base_freqs(fname_list, fname_samples, out_file, delThreshold=0,
             inThreshold=0, indelCoverageThreshold=0):
@@ -25,8 +27,8 @@ def get_base_freqs(fname_list, fname_samples, out_file, delThreshold=0,
     print(f"Parsing {len(usedSamples)}/{len(fname_list)} samples")
 
     cols = ["SAMPLE", "POS", "REF_BASE", "ALT_BASE", "(ADJUSTED_)READ_COUNT",
-        "A_freq", "C_freq", "G_freq", "T_freq", "DEL_freq", "IN_freq",
-        "IN1_freq", "IN2_freq"]
+        "A_freq", "C_freq", "G_freq", "T_freq", "DEL_freq", "IN_freq"]
+    cols.extend([f"IN{i}_freq" for i in range(1, INDEL_COLS + 1, 1)])
     print(out_file)
     out_stream = open(out_file, "w")
     out_stream.write('\t'.join(cols) + '\n')
@@ -195,15 +197,16 @@ def get_base_freqs(fname_list, fname_samples, out_file, delThreshold=0,
                 pos_data["G"] / pos_data["total"],
                 pos_data["T"] / pos_data["total"],
                 pos_data["-"] / pos_data["total"],
-                pos_data["+"] / pos_data["total"], 0, 0]
+                pos_data["+"] / pos_data["total"]]
+            new_line.extend(INDEL_COLS * [0])
             # Check if new insertion line was added
-            if 1 < in_no <= 3:
+            if 1 < in_no <= INDEL_COLS:
                 # Iterate over second, third/ fourth... insertion
                 for in_i in range(1, in_no, 1):
                     new_line[10 + in_i] = \
                         pos_data[f"+{in_i}"] / pos_data["total"]
-            elif in_no > 3:
-                print(f"ERROR: THREE INSERTIONS AT POSITION {pos} in {file}:")
+            elif in_no > INDEL_COLS:
+                print(f"ERROR: >{INDEL_COLS} INSERTIONS AT POS {pos} IN {file}:")
                 print(baseCounts[pos])
 
             out_stream.write('\t'.join([str(i) for i in new_line]) + '\n')
