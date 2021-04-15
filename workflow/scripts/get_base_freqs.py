@@ -4,8 +4,9 @@
 ###     This program extracts position specific nucleotide frequencies from all vcf files in the given file hierarchy.
 ###     *  Can exclude deletion read counts by setting "noDel=True".
 ###     *  Columns in vcf file: CHROM    POS	ID	REF	ALT	QUAL	FILTER	INFO
-###     *  Example line:
+###     *  Example line (ShoRaH):
 ###        NC_045512.2	241	.	T	C	4.77121	PASS	Freq1=1;Freq2=1;Freq3=0;Post1=1.324;Post2=1.0286;Post3=0;Fvar=2793;Rvar=2818;Ftot=2794;Rtot=2819;Pval=1;Qval=1
+###     *  Example line (LoFreq):
 #################################################################################################################################################################
 
 import sys
@@ -21,13 +22,14 @@ def get_base_freqs(fname_list, fname_samples, out_file, delThreshold=0,
 
     df_samples = pd.read_csv(fname_samples)
     usedSamples = df_samples["accession"].tolist()
-    total_sample_count = len(fname_list)
-    print(f"Parsing {len(usedSamples)}/{total_sample_count} samples")
-
+    print(f"Parsing {len(usedSamples)}/{len(fname_list)} samples")
 
     cols = ["SAMPLE", "POS", "REF_BASE", "ALT_BASE", "(ADJUSTED_)READ_COUNT",
-        "A_freq", "C_freq", "G_freq", "T_freq", "DEL_freq", "IN_freq"]
-    df_out = pd.DataFrame(columns=cols)
+        "A_freq", "C_freq", "G_freq", "T_freq", "DEL_freq", "IN_freq",
+        "IN1_freq", "IN2_freq"]
+    print(out_file)
+    out_stream = open(out_file, "w")
+    out_stream.write('\t'.join(cols) + '\n')
 
     # all files matching this pattern are processed
     # pattern = "samples/*/*/variants/SNVs/snvs.vcf"
@@ -68,12 +70,8 @@ def get_base_freqs(fname_list, fname_samples, out_file, delThreshold=0,
                     info = elems[7].split(";")
                     # Counts for ref-forward bases, ref-reverse, alt-forward,
                     #   and alt-reverse bases
-                    counts = [
-                        int(j)
-                        for i in info
-                        for j in i[4:].split(",")
-                        if i.startswith("DP4=")
-                    ]
+                    counts = [int(j) for i in info for j in i[4:].split(",")
+                        if i.startswith("DP4=")]
                     Fvar = counts[2]
                     Rvar = counts[3]
                     Ftot = Fvar + counts[0]
@@ -84,6 +82,7 @@ def get_base_freqs(fname_list, fname_samples, out_file, delThreshold=0,
                     Rvar = elems[7].split("Rvar=")[1].split(";")[0]
                     Ftot = elems[7].split("Ftot=")[1].split(";")[0]
                     Rtot = elems[7].split("Rtot=")[1].split(";")[0]
+
                 total = int(Ftot) + int(Rtot)
                 altTotal = int(Fvar) + int(Rvar)
 
@@ -196,22 +195,20 @@ def get_base_freqs(fname_list, fname_samples, out_file, delThreshold=0,
                 pos_data["G"] / pos_data["total"],
                 pos_data["T"] / pos_data["total"],
                 pos_data["-"] / pos_data["total"],
-                pos_data["+"] / pos_data["total"]]
+                pos_data["+"] / pos_data["total"], 0, 0]
             # Check if new insertion line was added
-            col_diff = df_out.shape[1] - len(new_line)
-            if col_diff > 0:
-                new_line.extend(col_diff * [0])
+            if 1 < in_no <= 3:
+                # Iterate over second, third/ fourth... insertion
+                for in_i in range(1, in_no, 1):
+                    new_line[10 + in_i] = \
+                        pos_data[f"+{in_i}"] / pos_data["total"]
+            elif in_no > 3:
+                print(f"ERROR: THREE INSERTIONS AT POSITION {pos} in {file}:")
+                print(baseCounts[pos])
 
-            df_out.loc[df_out.shape[0]] = new_line
+            out_stream.write('\t'.join([str(i) for i in new_line]) + '\n')
 
-            # Iterate over second, third/ fourth... insertion
-            for in_i in range(1, in_no, 1):
-                df_out.loc[df_out.shape[0] -1, f'IN{in_i}_freq'] \
-                    = pos_data[f"+{in_i}"] / pos_data["total"]
-
-    outFile = open(out_file, "w")
-    print(out_file)
-    df_out.to_csv(outFile, sep='\t', na_rep=0, index=False)
+    out_stream.close()
 
 
 def parse_args():
