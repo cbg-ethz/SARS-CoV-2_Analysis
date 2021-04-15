@@ -248,3 +248,4 @@ if __name__ == '__main__':
         get_base_freqs(args.fname_list, args.fname_samples, args.out_file,
             delThreshold=args.delThreshold,
             indelCoverageThreshold=args.indelCoverageThreshold)
+        

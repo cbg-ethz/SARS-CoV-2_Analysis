@@ -11,9 +11,7 @@ rule all:
         'results/data_retrieval/plots/coverage_per_locus.pdf',
         'results/data_retrieval/plots/coverage_per_sample.pdf',
         'results/data_retrieval/results/selected_samples.csv',
-
         'results/variant_calling/vcf_data.csv',
-
         'results/analysis/plots/heatmaps/',
         'results/analysis/plots/histograms/',
         'results/analysis/plots/mutation_histograms/',
