@@ -27,8 +27,8 @@ def get_base_freqs(fname_list, fname_samples, out_file, delThreshold=0,
     print(f"Parsing {len(usedSamples)}/{len(fname_list)} samples")
 
     cols = ["SAMPLE", "POS", "REF_BASE", "ALT_BASE", "(ADJUSTED_)READ_COUNT",
-        "A_freq", "C_freq", "G_freq", "T_freq", "DEL_freq", "IN_freq"]
-    cols.extend([f"IN{i}_freq" for i in range(1, INDEL_COLS + 1, 1)])
+        "A_freq", "C_freq", "G_freq", "T_freq", "DEL_freq"]
+    cols.extend([f"IN{i}_freq" for i in range(INDEL_COLS)])
     print(out_file)
     out_stream = open(out_file, "w")
     out_stream.write('\t'.join(cols) + '\n')
@@ -96,7 +96,7 @@ def get_base_freqs(fname_list, fname_samples, out_file, delThreshold=0,
                             baseCounts[pos + i_pos]['total'] += total
                         except KeyError:
                             baseCounts[pos + i_pos] = {'A': 0, 'C': 0, 'G': 0,
-                                'T': 0, '-': altTotal, '+': 0, 'total': total,
+                                'T': 0, '-': altTotal, '+0': 0, 'total': total,
                                 'ref': i_base, 'alt': ['-']}
                     continue
                 # Mutation, Insertion, or Deletion in SHoRaH
@@ -107,11 +107,11 @@ def get_base_freqs(fname_list, fname_samples, out_file, delThreshold=0,
                     # New position
                     except KeyError:
                         baseCounts[pos] = {'A': 0, 'C': 0, 'G': 0, 'T': 0,
-                            '-': 0, '+': 0, 'total': total, 'ref': refBase,
+                            '-': 0, '+0': 0, 'total': total, 'ref': refBase,
                             'alt': [altBase]}
                         # Insertion (LoFreq and ShoRaH)
                         if len(altBase) > len(refBase):
-                            altBase = "+"
+                            altBase = "+0"
                         baseCounts[pos][altBase] = altTotal
                     # Adjust read counts for already present position
                     else:
@@ -120,11 +120,8 @@ def get_base_freqs(fname_list, fname_samples, out_file, delThreshold=0,
                             in_no = sum([len(i) > 1 \
                                 for i in baseCounts[pos]['alt'][:-1]])
                             # If there is already an insetion, add another col
-                            if in_no > 0:
-                                altBase = f"+{in_no}"
-                                baseCounts[pos][altBase] = 0
-                            else:
-                                altBase = "+"
+                            altBase = f"+{in_no}"
+                            baseCounts[pos][altBase] = 0
                             
                         baseCounts[pos][altBase] += altTotal               
                         baseCounts[pos]["total"] += total
@@ -146,11 +143,13 @@ def get_base_freqs(fname_list, fname_samples, out_file, delThreshold=0,
 
         # Assign difference between total read count and sum of alt read counts as ref count
         for pos, pos_data in sorted(baseCounts.items()):
-            # Check if more than 1 deletion was called
-            in_no = sum([len(i) > 1 for i in pos_data['alt']])
+            # Get number of insertions
+            in_list = [i for i in pos_data['alt'] if len(i) > 1]
+            in_no = len(in_list)
+            # Adjust reference count
             altCounts = pos_data["A"] + pos_data["C"] + pos_data["G"] \
-                + pos_data["T"] + pos_data["-"] + pos_data["+"]
-            for in_i in range(1, in_no, 1): 
+                + pos_data["T"] + pos_data["-"]
+            for in_i in range(in_no):
                 altCounts += pos_data[f"+{in_i}"]
             pos_data[pos_data['ref']] = pos_data["total"] - altCounts
 
@@ -160,16 +159,19 @@ def get_base_freqs(fname_list, fname_samples, out_file, delThreshold=0,
                 print(baseCounts[pos])
 
             useDel = True
-            useIn = True
-            # Check if deletion makes the threshold at this postion
-            if pos_data["-"] / pos_data["total"] <= delThreshold:
-                useDel = False
-            # Check if insertion makes the threshold at this postion
-            if pos_data["+"] / pos_data["total"] <= inThreshold:
-                useIn = False
+            useIn = [True for i in range(in_no)]
+            # Check if indels pass read coverage threshold
             if pos_data["total"] <= indelCoverageThreshold:
                 useDel = False
-                useIn = False
+                useIn = [False for i in range(in_no)]
+            else:
+                # Check if deletion pass the relative presence threshold
+                if pos_data["-"] / pos_data["total"] <= delThreshold:
+                    useDel = False
+                # Check if insertion pass the relative presence threshold
+                for in_i in range(in_no): 
+                    if pos_data[f"+{in_i}"] / pos_data["total"] <= inThreshold:
+                        useIn[in_i] = False
 
             # If deletion is not considered, update total considered read counts
             if not useDel:
@@ -177,10 +179,12 @@ def get_base_freqs(fname_list, fname_samples, out_file, delThreshold=0,
                 pos_data["-"] = 0
                 pos_data['alt'] = [i for i in pos_data['alt'] if i != '-']
             # If insertion is not considered, update total considered read counts
-            if not useIn:
-                pos_data["total"] -= pos_data["+"]
-                pos_data["+"] = 0
-                pos_data['alt'] = [i for i in pos_data['alt'] if i != '+']
+            for in_i, in_flag in enumerate(useIn):
+                if not in_flag:
+                    pos_data["total"] -= pos_data[f"+{in_i}"]
+                    pos_data[f"+{in_i}"] = 0
+                    pos_data['alt'] = [i for i in pos_data['alt'] \
+                        if i != in_list[in_i]]
 
             # Skip position if no reads are left
             if pos_data["total"] == 0:  
@@ -196,16 +200,19 @@ def get_base_freqs(fname_list, fname_samples, out_file, delThreshold=0,
                 pos_data["C"] / pos_data["total"],
                 pos_data["G"] / pos_data["total"],
                 pos_data["T"] / pos_data["total"],
-                pos_data["-"] / pos_data["total"],
-                pos_data["+"] / pos_data["total"]]
-            new_line.extend(INDEL_COLS * [0])
+                pos_data["-"] / pos_data["total"]]
+            new_line.extend(INDEL_COLS  * [0])
             # Check if new insertion line was added
-            if 1 < in_no <= INDEL_COLS:
+            valid_in_no = sum(useIn)
+            if 0 < valid_in_no <= INDEL_COLS:
                 # Iterate over second, third/ fourth... insertion
-                for in_i in range(1, in_no, 1):
-                    new_line[10 + in_i] = \
-                        pos_data[f"+{in_i}"] / pos_data["total"]
-            elif in_no > INDEL_COLS:
+                in_col = 0
+                for in_i, in_i_flag in enumerate(useIn):
+                    if in_i_flag:
+                        new_line[10 + in_col] = \
+                            pos_data[f"+{in_i}"] / pos_data["total"]
+                        in_col += 1
+            elif valid_in_no > INDEL_COLS:
                 print(f"ERROR: >{INDEL_COLS} INSERTIONS AT POS {pos} IN {file}:")
                 print(baseCounts[pos])
 
@@ -246,5 +253,5 @@ if __name__ == '__main__':
             samples.close()
             args.fname_samples = samples.name
         get_base_freqs(args.fname_list, args.fname_samples, args.out_file,
-            delThreshold=args.delThreshold,
+            delThreshold=args.delThreshold, inThreshold=args.inThreshold,
             indelCoverageThreshold=args.indelCoverageThreshold)
