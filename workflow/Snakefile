@@ -10,7 +10,7 @@ rule all:
     input:
         'results/data_retrieval/plots/coverage_per_locus.pdf',
         'results/data_retrieval/plots/coverage_per_sample.pdf',
-        'results/data_retrieval/results/selected_samples.csv',
+        'results/data_retrieval/results/distilled_dataframe.csv.gz',
         'results/variant_calling/vcf_data.csv',
         'results/analysis/plots/heatmaps/',
         'results/analysis/plots/histograms/',

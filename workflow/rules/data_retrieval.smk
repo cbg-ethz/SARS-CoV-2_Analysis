@@ -570,21 +570,6 @@ rule retrieve_sra_metadata:
             accession_list
         ), df_meta.shape
 
-        # engineer additional features
-        # assert 'location' not in df_meta.columns
-        # df_meta['location'] = (
-        #     df_meta['geographic location (country and/or sea)'].combine_first(
-        #         df_meta['geo_loc_name'].str
-        #                                .split(':')
-        #                                .str[0]
-        #     ).replace({
-        #         'Not Applicable': pd.NA,
-        #         'not applicable': pd.NA,
-        #         'missing': pd.NA,
-        #         'not collected': pd.NA
-        #     })
-        # )
-
         # save data
         df_meta.to_csv(output.fname, index=False)
 
@@ -730,3 +715,83 @@ rule select_samples:
         with open(output.fname, 'w') as fd:
             fd.write('accession\n')
             fd.write('\n'.join(selection))
+
+
+rule distill_data_frame:
+    input:
+        fname_df='results/data_retrieval/results/final_dataframe.csv.gz',
+        fname_selection='results/data_retrieval/results/selected_samples.csv',
+    output:
+        fname='results/data_retrieval/results/distilled_dataframe.csv.gz',
+    resources:
+        mem_mb=40_000,
+    run:
+        import pandas as pd
+
+        # read data
+        df_all = pd.read_csv(input.fname_df, index_col=0, low_memory=False)
+        df_samples = pd.read_csv(input.fname_selection)
+
+        df_all = df_all.loc[df_samples['accession']]
+
+        df = df_all[
+            [
+                'library_source',
+                'library_strategy',
+                'per_base_read_count_lower_quartile',
+                'per_base_read_count_median',
+                'per_base_read_count_upper_quartile',
+            ]
+        ].copy()
+
+        # helper function
+        def combine(column_list, na_values=None):
+            print(f'--- {column_list} --')
+            res = df_all[column_list[0]]
+            print(' > ', column_list[0], res.isna().sum())
+
+            for col in column_list[1:]:
+                if isinstance(col, str):
+                    res = res.combine_first(df_all[col])
+                else:
+                    res = res.combine_first(col(df_all))
+                print(' > ', col, res.isna().sum())
+
+            if na_values is not None:
+                res = res.replace({v: pd.NA for v in na_values})
+
+            print(res.value_counts(dropna=False))
+            print()
+            return res
+
+
+        # engineer additional features
+        assert 'location' not in df.columns
+        df['location'] = combine(
+            [
+                'geographic location (country and/or sea)',
+                lambda x: x['geo_loc_name'].str.split(':').str[0],
+            ],
+            ['Not Applicable', 'not applicable', 'missing', 'not collected'],
+        )
+
+        assert 'host' not in df.columns
+        df['host'] = combine(
+            ['host', 'host common name', 'host scientific name'],
+            ['not provided', 'Not Applicable'],
+        )
+
+        assert 'host_sex' not in df.columns
+        df['host_sex'] = combine(
+            ['host_sex', 'host sex'], ['not provided', 'missing', 'Unknown']
+        )
+
+        assert 'host_age' not in df.columns
+        df['host_age'] = combine(['host_age', 'host age'], ['missing'])
+
+        assert 'collection_date' not in df.columns
+        df['collection_date'] = combine(['collection_date', 'collection date'])
+
+        # save result
+        print(df.isna().sum())
+        df.to_csv(output.fname)
