@@ -18,6 +18,7 @@ from tqdm import tqdm
 
 INDEL_COLS = 10
 
+
 def get_base_freqs(
     fname_list,
     fname_samples,
@@ -183,7 +184,7 @@ def get_base_freqs(
         # Assign difference between total read count and sum of alt read counts as ref count
         for pos, pos_data in sorted(baseCounts.items()):
             # Get number of insertions
-            in_list = [i for i in pos_data['alt'] if len(i) > 1]
+            in_list = [i for i in pos_data["alt"] if len(i) > 1]
             in_no = len(in_list)
             # Get sum of alternative read counts
             altCounts = (
@@ -213,7 +214,7 @@ def get_base_freqs(
                 if pos_data["-"] / pos_data["total"] <= delThreshold:
                     useDel = False
                 # Check if insertion pass the relative presence threshold
-                for in_i in range(in_no): 
+                for in_i in range(in_no):
                     if pos_data[f"+{in_i}"] / pos_data["total"] <= inThreshold:
                         useIn[in_i] = False
 
@@ -228,8 +229,7 @@ def get_base_freqs(
                 if not in_flag:
                     pos_data["total"] -= pos_data[f"+{in_i}"]
                     pos_data[f"+{in_i}"] = 0
-                    pos_data['alt'] = [i for i in pos_data['alt'] \
-                        if i != in_list[in_i]]
+                    pos_data["alt"] = [i for i in pos_data["alt"] if i != in_list[in_i]]
 
             # Skip position if no reads are left
             if pos_data["total"] == 0:
