@@ -329,9 +329,9 @@ rule plot_coverage_per_locus:
     benchmark:
         'benchmarks/plot_coverage_per_locus.benchmark.txt'
     params:
-        target_sample_num=50_000,
+        target_sample_num=30_000,
     resources:
-        mem_mb=30_000,
+        mem_mb=55_000,
     run:
         import itertools
 
