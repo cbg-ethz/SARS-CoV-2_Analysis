@@ -305,10 +305,15 @@ if __name__ == "__main__":
         if not args.fname_samples:
             import tempfile
 
+            def clean_fname(fname):
+                if fname.endswith(".vcf"):
+                    fname = fname[:-4]
+                if fname.startswith("snvs_"):
+                    fname = fname[5:]
+                return fname
+
             samples = tempfile.NamedTemporaryFile(delete=False)
-            sample_list = [
-                os.path.basename(i).replace(".vcf", "") for i in args.fname_list
-            ]
+            sample_list = [clean_fname(os.path.basename(i)) for i in args.fname_list]
             samples.write(str.encode("accession\n" + "\n".join(sample_list)))
             samples.close()
             args.fname_samples = samples.name
