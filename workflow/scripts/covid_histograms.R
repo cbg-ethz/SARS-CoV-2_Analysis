@@ -17,7 +17,7 @@ dir.create(outdir, recursive = TRUE)
 # add entropy
 covid_table %>% mutate(ENT = Entropy(A_freq) + Entropy(C_freq) +
                            Entropy(G_freq) + Entropy(T_freq) +
-                           Entropy(DEL_freq)) -> covid_table
+                           Entropy(DEL_freq) + Entropy(IN_freq)) -> covid_table
 
 ### check number of samples
 
