@@ -11,9 +11,7 @@ rule all:
         'results/data_retrieval/plots/coverage_per_locus.pdf',
         'results/data_retrieval/plots/coverage_per_sample.pdf',
         'results/data_retrieval/results/distilled_dataframe.csv.gz',
-
         'results/variant_calling/vcf_data.csv',
-
         'results/analysis/plots/snv_coverage_plot.pdf',
         'results/analysis/plots/av_top_positions.pdf',
         'results/analysis/plots/heatmaps.png',
