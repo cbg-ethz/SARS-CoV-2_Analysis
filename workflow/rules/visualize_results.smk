@@ -1,93 +1,109 @@
-rule plot_heatmaps:
+rule snv_coverage_plot:
     input:
-        fname='results/variant_calling/vcf_data.csv',
-        fname_covariates='results/data_retrieval/results/final_dataframe.csv.gz',
-        fname_genes='resources/references/genes.csv',
+        fname_coverage=(
+            "results/data_retrieval/coverage/coverage.{accession}.csv.gz".format(
+                accession=config["input"]["snv_coverage_plot"]["accession"]
+            )
+        ),
+        fname_vcf="results/variant_calling/calls/{accession}.vcf".format(
+            accession=config["input"]["snv_coverage_plot"]["accession"]
+        ),
+        fname_genes="resources/references/genes.csv",
     output:
-        outdir=directory('results/analysis/plots/heatmaps/'),
+        fname="results/analysis/plots/snv_coverage_plot.pdf",
+    params:
+        sample_accession=config["input"]["snv_coverage_plot"]["accession"],
+        snv_highlights=[(23403, "D614G")],
     script:
-        '../scripts/covid_heatmaps.R'
+        "../scripts/snv_coverage_plot.py"
+
+
+rule covid_summarise_entropy:
+    input:
+        fname_entropy="results/analysis/entropy.csv",
+    output:
+        fname_persample="results/analysis/entropy_persample.csv",
+        fname_perpos="results/analysis/entropy_perposition.csv",
+        fname_persamplemuts="results/analysis/entropy_persamplemutations.csv",
+        fname_filtered="results/analysis/entropy_filtered.csv",
+    script:
+        "../scripts/covid_summarise_entropy.R"
+
+
+rule covid_gene_av:
+    input:
+        fname_perpos="results/analysis/entropy_perposition.csv",
+        fname_genes="resources/references/genes.csv",
+    output:
+        fname_top_regions="results/analysis/results/top_deletions.txt",
+        fname_top_bases="results/analysis/results/top_bases.txt",
+        fname_plot_pdf="results/analysis/plots/av_top_positions.pdf",
+        fname_plot_png="results/analysis/plots/av_top_positions.png",
+    script:
+        "../scripts/covid_gene_av.R"
+
+
+rule covid_compute_entropy:
+    input:
+        fname="results/variant_calling/vcf_data.csv",
+        fname_samples="results/data_retrieval/results/selected_samples.csv",
+    output:
+        fname="results/analysis/entropy.csv",
+    script:
+        "../scripts/covid_compute_entropy.R"
+
+
+rule covid_heatmaps_padded:
+    input:
+        fname="results/variant_calling/vcf_data.csv",
+        fname_genes="resources/references/genes.csv",
+    output:
+        fname="results/analysis/plots/heatmaps.png",
+    script:
+        "../scripts/covid_heatmaps_padded.R"
 
 
 rule plot_histograms:
     input:
-        fname='results/variant_calling/vcf_data.csv',
+        fname_persample="results/analysis/entropy_persample.csv",
+        fname_perpos="results/analysis/entropy_perposition.csv",
+        fname_persamplemuts="results/analysis/entropy_persamplemutations.csv",
     output:
-        fname_entropy_samples='results/analysis/results/log_entropy_samples.csv',
-        fname_entropy_positions='results/analysis/results/log_entropy_positions.csv',
-        outdir=directory('results/analysis/plots/histograms/'),
+        outdir=directory("results/analysis/plots/histograms/"),
+    resources:
+        mem_mb=30000,
     script:
-        '../scripts/covid_histograms.R'
+        "../scripts/covid_histograms.R"
 
 
-rule plot_mutation_histograms:
+rule covid_regression_public:
     input:
-        fname_vcf='results/variant_calling/vcf_data.csv',
+        fname="results/variant_calling/vcf_data.csv",
+        fname_entropy="results/analysis/entropy.csv",
     output:
-        fname='results/analysis/results/mut_samples.csv',
-        outdir=directory('results/analysis/plots/mutation_histograms/'),
+        fname="results/analysis/covid.csv",
+        fname_hist="results/analysis/plots/time_histogram.png",
+        fname_regression="results/analysis/plots/time_regression.png",
     script:
-        '../scripts/covid_histogram_mut.R'
+        "../scripts/covid_regression_public.R"
 
 
-rule compute_regression:
+rule covid_top_bases_extended:
     input:
-        fname_covariates='results/data_retrieval/results/final_dataframe.csv.gz',
-        fname_entropy_samples='results/analysis/results/log_entropy_samples.csv',
+        fname="results/variant_calling/vcf_data.csv",
+        fname_samples="results/data_retrieval/results/selected_samples.csv",
+        fname_entropy="results/analysis/entropy.csv",
     output:
-        fname_lm_summary='results/analysis/regression/lm_summary.txt',
+        fname="results/analysis/top_bases_extended.csv",
     script:
-        '../scripts/covid_regression.R'
+        "../scripts/covid_top_bases_extended.R"
 
 
-rule snv_coverage_plot:
+rule covid_top_samples:
     input:
-        fname_coverage=(
-            'results/data_retrieval/coverage/coverage.{accession}.csv.gz'.format(
-                accession=config['input']['snv_coverage_plot']['accession']
-            )
-        ),
-        fname_vcf='results/variant_calling/calls/{accession}.vcf'.format(
-            accession=config['input']['snv_coverage_plot']['accession']
-        ),
-        fname_genes='resources/references/genes.csv',
+        fname_persample="results/analysis/entropy_persample.csv",
+        fname_persamplemuts="results/analysis/entropy_persamplemutations.csv",
     output:
-        fname='results/analysis/plots/snv_coverage_plot.pdf',
-    params:
-        sample_accession=config['input']['snv_coverage_plot']['accession'],
-        snv_highlights=[(23403, 'D614G')],
+        fname="results/analysis/top_samples.csv",
     script:
-        '../scripts/snv_coverage_plot.py'
-
-
-rule compute_top_positions:
-    input:
-        fname_entropy_positions='results/analysis/results/log_entropy_positions.csv',
-        fname_genes='resources/references/genes.csv',
-    output:
-        fname_top_deletions='results/analysis/results/top_deletions.txt',
-        fname_top_bases='results/analysis/results/top_bases.txt',
-        fname_av_top_positions_pdf='results/analysis/plots/av_top_positions.pdf',
-        fname_av_top_positions_png='results/analysis/plots/av_top_positions.png',
-    script:
-        '../scripts/covid_gene_av.R'
-
-
-rule generate_extended_top_positions_table:
-    input:
-        fname_top_bases='results/analysis/results/top_bases.txt',
-        fname_vcf='results/variant_calling/vcf_data.csv',
-    output:
-        fname='results/analysis/results/top_bases_extended.txt',
-    script:
-        '../scripts/covid_top_positions_extended_table.R'
-
-
-rule generate_extended_top_samples_table:
-    input:
-        fname_entropy_samples='results/analysis/results/log_entropy_samples.csv',
-        fname_vcf='results/variant_calling/vcf_data.csv',
-    output:
-        fname='results/analysis/results/top_samples_extended.txt',
-    script:
-        '../scripts/covid_top_samples_extended.R'
+        "../scripts/covid_top_samples.R"
