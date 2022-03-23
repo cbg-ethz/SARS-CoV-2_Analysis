@@ -6,39 +6,39 @@ localrules:
     all,
 
 
-accession_list = pd.read_csv(config['sample_accession_file'])['accession'].tolist()
+accession_list = pd.read_csv(config["sample_accession_file"])["accession"].tolist()
 
 
 # job grouping requires execution dependent resources
 job_resources = {
-    'download_fastq': {'mem_mb': 1_000, 'threads': 6},
-    'vpipe_trim': {'mem_mb': 10_000, 'threads': 1},
-    'bwa_mem': {'mem_mb': 4_000, 'threads': 8},
+    "download_fastq": {"mem_mb": 1_000, "threads": 6},
+    "vpipe_trim": {"mem_mb": 10_000, "threads": 1},
+    "bwa_mem": {"mem_mb": 4_000, "threads": 8},
 }
-if config['job_grouping_mode']:
+if config["job_grouping_mode"]:
     # to be used with '--group-components data_processing=10'
     job_resources = {
-        'download_fastq': {'mem_mb': 200, 'threads': 1},
-        'vpipe_trim': {'mem_mb': 200, 'threads': 1},
-        'bwa_mem': {'mem_mb': 200, 'threads': 1},
+        "download_fastq": {"mem_mb": 200, "threads": 1},
+        "vpipe_trim": {"mem_mb": 200, "threads": 1},
+        "bwa_mem": {"mem_mb": 200, "threads": 1},
     }
 
 
 # workflow
 rule download_fastq:
     output:
-        fname_marker=touch('results/data_retrieval/data/{accession}.marker'),
-        temp_dir=temp(directory('results/data_retrieval/data/tmp.{accession}')),
+        fname_marker=touch("results/data_retrieval/data/{accession}.marker"),
+        temp_dir=temp(directory("results/data_retrieval/data/tmp.{accession}")),
     params:
         restart_times=10,
     log:
-        outfile='logs/download.{accession}.out.log',
-        errfile='logs/download.{accession}.err.log',
+        outfile="logs/download.{accession}.out.log",
+        errfile="logs/download.{accession}.err.log",
     resources:
-        mem_mb=job_resources['download_fastq']['mem_mb'],
-    threads: job_resources['download_fastq']['threads']
+        mem_mb=job_resources["download_fastq"]["mem_mb"],
+    threads: job_resources["download_fastq"]["threads"]
     group:
-        'data_processing'
+        "data_processing"
     priority: -1
     run:
         import os
@@ -50,7 +50,7 @@ rule download_fastq:
 
         # delete output files if they already exist
         # because fasterq-dump crashes otherwise
-        for path in outdir.glob(f'{wildcards.accession}*.fastq'):
+        for path in outdir.glob(f"{wildcards.accession}*.fastq"):
             path.unlink(missing_ok=True)
 
         # commence download
@@ -63,16 +63,16 @@ rule download_fastq:
 
             try:
                 shell(
-                    'fasterq-dump'
-                    ' --threads {threads}'
-                    ' -p'  # --progress
-                    ' --outdir {outdir}'
-                    ' --temp {output.temp_dir}'
-                    ' {wildcards.accession}'
-                    ' > >(tee {log.outfile}) 2>&1'
+                    "fasterq-dump"
+                    " --threads {threads}"
+                    " -p"  # --progress
+        " --outdir {outdir}"
+                    " --temp {output.temp_dir}"
+                    " {wildcards.accession}"
+                    " > >(tee {log.outfile}) 2>&1"
                 )
             except subprocess.CalledProcessError:
-                print('Download process crashed, hopefully this is just a fluke...')
+                print("Download process crashed, hopefully this is just a fluke...")
                 time.sleep(100)
 
             # make sure the files were actually created
@@ -86,27 +86,27 @@ rule download_fastq:
             counter += 1
 
             if counter > params.restart_times:
-                raise RuntimeError(f'Download failed {counter} times')
+                raise RuntimeError(f"Download failed {counter} times")
 
 
 rule vpipe_trim:
     input:
-        fname_marker='results/data_retrieval/data/{accession}.marker',
+        fname_marker="results/data_retrieval/data/{accession}.marker",
     output:
-        touch('results/data_retrieval/trimmed/{accession}.marker'),
+        touch("results/data_retrieval/trimmed/{accession}.marker"),
     params:
-        extra='-ns_max_n 4 -min_qual_mean 30 -trim_qual_left 30 -trim_qual_right 30 -trim_qual_window 10',
+        extra="-ns_max_n 4 -min_qual_mean 30 -trim_qual_left 30 -trim_qual_right 30 -trim_qual_window 10",
         trim_percent_cutoff=0.8,
     log:
-        outfile='logs/trimming.{accession}.out.log',
-        errfile='logs/trimming.{accession}.err.log',
+        outfile="logs/trimming.{accession}.out.log",
+        errfile="logs/trimming.{accession}.err.log",
     resources:
-        mem_mb=job_resources['vpipe_trim']['mem_mb'],
-    threads: job_resources['vpipe_trim']['threads']
+        mem_mb=job_resources["vpipe_trim"]["mem_mb"],
+    threads: job_resources["vpipe_trim"]["threads"]
     group:
-        'data_processing'
+        "data_processing"
     conda:
-        '../envs/preprocessing.yaml'
+        "../envs/preprocessing.yaml"
     priority: 1
     shell:
         """
@@ -175,44 +175,44 @@ rule vpipe_trim:
 
 rule bwa_index:
     input:
-        config['reference'],
+        config["reference"],
     output:
-        'results/data_retrieval/references/reference.amb',
-        'results/data_retrieval/references/reference.ann',
-        'results/data_retrieval/references/reference.bwt',
-        'results/data_retrieval/references/reference.pac',
-        'results/data_retrieval/references/reference.sa',
+        "results/data_retrieval/references/reference.amb",
+        "results/data_retrieval/references/reference.ann",
+        "results/data_retrieval/references/reference.bwt",
+        "results/data_retrieval/references/reference.pac",
+        "results/data_retrieval/references/reference.sa",
     log:
-        'logs/bwa_index.log',
+        "logs/bwa_index.log",
     params:
-        prefix='results/data_retrieval/references/reference',
+        prefix="results/data_retrieval/references/reference",
     wrapper:
-        '0.68.0/bio/bwa/index'
+        "0.68.0/bio/bwa/index"
 
 
 rule bwa_mem:
     input:
-        fname_marker='results/data_retrieval/trimmed/{accession}.marker',
-        index='results/data_retrieval/references/reference.amb',
-        fname_ref=config['reference'],
+        fname_marker="results/data_retrieval/trimmed/{accession}.marker",
+        index="results/data_retrieval/references/reference.amb",
+        fname_ref=config["reference"],
     output:
-        fname_cram='results/data_retrieval/alignment/{accession}.cram',
+        fname_cram="results/data_retrieval/alignment/{accession}.cram",
     log:
-        outfile='logs/alignment.{accession}.out.log',
-        errfile='logs/alignment.{accession}.err.log',
+        outfile="logs/alignment.{accession}.out.log",
+        errfile="logs/alignment.{accession}.err.log",
     params:
-        index='results/data_retrieval/references/reference',
-        sort='samtools',
-        sort_order='coordinate',
+        index="results/data_retrieval/references/reference",
+        sort="samtools",
+        sort_order="coordinate",
     benchmark:
-        'benchmarks/bwa_mem.{accession}.benchmark.txt'
+        "benchmarks/bwa_mem.{accession}.benchmark.txt"
     resources:
-        mem_mb=job_resources['bwa_mem']['mem_mb'],
-    threads: job_resources['bwa_mem']['threads']
+        mem_mb=job_resources["bwa_mem"]["mem_mb"],
+    threads: job_resources["bwa_mem"]["threads"]
     conda:
-        '../envs/alignment.yaml'
+        "../envs/alignment.yaml"
     group:
-        'data_processing'
+        "data_processing"
     priority: 2
     shell:
         """
@@ -241,26 +241,26 @@ rule bwa_mem:
 
 rule samtools_index:
     input:
-        'results/data_retrieval/alignment/{accession}.cram',
+        "results/data_retrieval/alignment/{accession}.cram",
     output:
-        'results/data_retrieval/alignment/{accession}.cram.crai',
+        "results/data_retrieval/alignment/{accession}.cram.crai",
     group:
-        'data_processing'
+        "data_processing"
     priority: 3
     wrapper:
-        '0.68.0/bio/samtools/index'
+        "0.68.0/bio/samtools/index"
 
 
 rule compute_coverage:
     input:
-        fname='results/data_retrieval/alignment/{accession}.cram',
-        index='results/data_retrieval/alignment/{accession}.cram.crai',
+        fname="results/data_retrieval/alignment/{accession}.cram",
+        index="results/data_retrieval/alignment/{accession}.cram.crai",
     output:
-        fname='results/data_retrieval/coverage/coverage.{accession}.csv.gz',
+        fname="results/data_retrieval/coverage/coverage.{accession}.csv.gz",
     benchmark:
-        'benchmarks/compute_coverage.{accession}.benchmark.txt'
+        "benchmarks/compute_coverage.{accession}.benchmark.txt"
     group:
-        'data_processing'
+        "data_processing"
     priority: 3
     run:
         import pysam
@@ -268,7 +268,7 @@ rule compute_coverage:
         import numpy as np
         import pandas as pd
 
-        bam = pysam.AlignmentFile(input.fname, 'rc')
+        bam = pysam.AlignmentFile(input.fname, "rc")
         assert bam.has_index()
         assert len(bam.references) == 1
         ref = bam.references[0]
@@ -281,13 +281,13 @@ rule compute_coverage:
 rule aggregate_results:
     input:
         fname_list=expand(
-            'results/data_retrieval/coverage/coverage.{accession}.csv.gz',
+            "results/data_retrieval/coverage/coverage.{accession}.csv.gz",
             accession=accession_list,
         ),
     output:
-        fname='results/data_retrieval/results/coverage_quantiles.csv.gz',
+        fname="results/data_retrieval/results/coverage_quantiles.csv.gz",
     benchmark:
-        'benchmarks/aggregate_results.benchmark.txt'
+        "benchmarks/aggregate_results.benchmark.txt"
     params:
         quantile_list=[0.25, 0.5, 0.75],
     resources:
@@ -299,35 +299,35 @@ rule aggregate_results:
 
         tmp = []
         for fname in tqdm(input.fname_list):
-            accession = Path(fname).stem.split('.')[1]
+            accession = Path(fname).stem.split(".")[1]
             df_tmp = pd.read_csv(fname, squeeze=True)
 
             tmp.append(
                 {
-                    'accession': accession,
-                    **{f'q{q}': df_tmp.quantile(q=q) for q in params.quantile_list},
+                    "accession": accession,
+                    **{f"q{q}": df_tmp.quantile(q=q) for q in params.quantile_list},
                 }
             )
 
-        pd.DataFrame(tmp).sort_values('accession').to_csv(output.fname, index=False)
+        pd.DataFrame(tmp).sort_values("accession").to_csv(output.fname, index=False)
 
 
 rule plot_coverage_per_locus:
     input:
         unpack(
             lambda wildcards: {
-                f'fname_coverage_{accession}': f'results/data_retrieval/coverage/coverage.{accession}.csv.gz'
+                f"fname_coverage_{accession}": f"results/data_retrieval/coverage/coverage.{accession}.csv.gz"
                 for accession in accession_list
             }
         ),
-        fname_selection='results/data_retrieval/results/selected_samples.csv',
+        fname_selection="results/data_retrieval/results/selected_samples.csv",
     output:
         fname=report(
-            'results/data_retrieval/plots/coverage_per_locus.pdf',
-            caption='report/empty_caption.rst',
+            "results/data_retrieval/plots/coverage_per_locus.pdf",
+            caption="report/empty_caption.rst",
         ),
     benchmark:
-        'benchmarks/plot_coverage_per_locus.benchmark.txt'
+        "benchmarks/plot_coverage_per_locus.benchmark.txt"
     params:
         target_sample_num=30_000,
     resources:
@@ -347,7 +347,7 @@ rule plot_coverage_per_locus:
         # fix big boom on macOS
         import matplotlib
 
-        matplotlib.use('Agg')
+        matplotlib.use("Agg")
 
         # helper functions
         def flip(items, ncol):
@@ -361,35 +361,35 @@ rule plot_coverage_per_locus:
 
         cov_list = []
         for accession in selected_samples[::sample_freq]:
-            cov_list.append(pd.read_csv(input[f'fname_coverage_{accession}']))
+            cov_list.append(pd.read_csv(input[f"fname_coverage_{accession}"]))
         df_cov = pd.concat(cov_list, axis=1)
 
-        df_genes = pd.read_csv('resources/references/genes.csv')
+        df_genes = pd.read_csv("resources/references/genes.csv")
         df_primers = pd.read_csv(
-            'resources/references/nCoV-2019.bed',
-            sep='\t',
+            "resources/references/nCoV-2019.bed",
+            sep="\t",
             header=None,
-            names=['chrom', 'chromStart', 'chromEnd', 'name', 'foo', 'strand'],
+            names=["chrom", "chromStart", "chromEnd", "name", "foo", "strand"],
         )
 
         # compute data statistics
         df_stats = pd.DataFrame(
             {
-                'lower quartile': df_cov.quantile(q=0.25, axis=1),
-                'median': df_cov.quantile(q=0.5, axis=1),
-                'upper quartile': df_cov.quantile(q=0.75, axis=1),
+                "lower quartile": df_cov.quantile(q=0.25, axis=1),
+                "median": df_cov.quantile(q=0.5, axis=1),
+                "upper quartile": df_cov.quantile(q=0.75, axis=1),
             }
         )
 
         # prepare primers
-        df_primers_sub = df_primers[~df_primers['name'].str.contains('alt')].copy()
-        df_primers_sub['primer_id'] = (
-            df_primers_sub['name'].str.split('_').str[:2].str.join('_')
+        df_primers_sub = df_primers[~df_primers["name"].str.contains("alt")].copy()
+        df_primers_sub["primer_id"] = (
+            df_primers_sub["name"].str.split("_").str[:2].str.join("_")
         )
         df_pos = pd.DataFrame(
             {
-                'start': df_primers_sub.groupby('primer_id')['chromStart'].min(),
-                'end': df_primers_sub.groupby('primer_id')['chromEnd'].max(),
+                "start": df_primers_sub.groupby("primer_id")["chromStart"].min(),
+                "end": df_primers_sub.groupby("primer_id")["chromEnd"].max(),
             }
         )
 
@@ -397,7 +397,7 @@ rule plot_coverage_per_locus:
         fig, (ax_genes, ax_coverage) = plt.subplots(
             nrows=2,
             ncols=1,
-            gridspec_kw={'height_ratios': [1, 5]},
+            gridspec_kw={"height_ratios": [1, 5]},
             sharex=True,
             figsize=(10, 6),
         )
@@ -411,43 +411,43 @@ rule plot_coverage_per_locus:
         record.plot(ax=ax_genes, with_ruler=False)
 
         legend_elements = df_genes.apply(
-            lambda x: Patch(facecolor=x.color, edgecolor='black', label=x.gene_name),
+            lambda x: Patch(facecolor=x.color, edgecolor="black", label=x.gene_name),
             axis=1,
         ).tolist()
 
         ncol = df_genes.shape[0] // 2 + 1
         ax_genes.legend(
             handles=flip(legend_elements, ncol),
-            loc='upper center',
+            loc="upper center",
             ncol=ncol,
             fontsize=10,
             frameon=False,
         )
 
         # coverage
-        ax_coverage.plot(df_stats.index, df_stats['median'], label='median')
+        ax_coverage.plot(df_stats.index, df_stats["median"], label="median")
         ax_coverage.plot(
             df_stats.index,
-            df_stats['lower quartile'],
+            df_stats["lower quartile"],
             alpha=0.5,
-            label='lower quartile',
+            label="lower quartile",
         )
         ax_coverage.plot(
             df_stats.index,
-            df_stats['upper quartile'],
+            df_stats["upper quartile"],
             alpha=0.5,
-            label='upper quartile',
+            label="upper quartile",
         )
 
-        ax_coverage.set_xlabel('Genomic position [bp]')
-        ax_coverage.set_ylabel('Per base read count')
+        ax_coverage.set_xlabel("Genomic position [bp]")
+        ax_coverage.set_ylabel("Per base read count")
 
-        ax_coverage.legend(loc='best')
+        ax_coverage.legend(loc="best")
 
         # primers
-        for row in df_pos.sort_values('start').itertuples():
-            ax_coverage.axvline(row.start, 0, 0.04, color='black', lw=1, ls='solid')
-            ax_coverage.axvline(row.end, 0, 0.04, color='black', lw=1, ls='dashed')
+        for row in df_pos.sort_values("start").itertuples():
+            ax_coverage.axvline(row.start, 0, 0.04, color="black", lw=1, ls="solid")
+            ax_coverage.axvline(row.end, 0, 0.04, color="black", lw=1, ls="dashed")
 
         fig.tight_layout()
         fig.savefig(output.fname)
@@ -455,14 +455,14 @@ rule plot_coverage_per_locus:
 
 rule plot_coverage_per_sample:
     input:
-        fname='results/data_retrieval/results/coverage_quantiles.csv.gz',
+        fname="results/data_retrieval/results/coverage_quantiles.csv.gz",
     output:
         fname=report(
-            'results/data_retrieval/plots/coverage_per_sample.pdf',
-            caption='report/empty_caption.rst',
+            "results/data_retrieval/plots/coverage_per_sample.pdf",
+            caption="report/empty_caption.rst",
         ),
     benchmark:
-        'benchmarks/plot_coverage_per_sample.benchmark.txt'
+        "benchmarks/plot_coverage_per_sample.benchmark.txt"
     params:
         target_sample_num=1000,
     resources:
@@ -478,12 +478,12 @@ rule plot_coverage_per_sample:
         # fix big boom on macOS
         import matplotlib
 
-        matplotlib.use('Agg')
+        matplotlib.use("Agg")
 
         # read data
         df = pd.read_csv(
-            input.fname, index_col='accession', low_memory=False
-        ).sort_values('q0.5')
+            input.fname, index_col="accession", low_memory=False
+        ).sort_values("q0.5")
 
         # subsample data for performant plot
         sample_freq = max(1, df.shape[0] // params.target_sample_num)
@@ -492,32 +492,32 @@ rule plot_coverage_per_sample:
         # plot data
         plt.figure(figsize=(10, 6))
 
-        plt.plot(df['q0.5'], label='median')
-        plt.plot(df['q0.25'], alpha=0.5, label='lower quartile')
-        plt.plot(df['q0.75'], alpha=0.5, label='upper quartile')
+        plt.plot(df["q0.5"], label="median")
+        plt.plot(df["q0.25"], alpha=0.5, label="lower quartile")
+        plt.plot(df["q0.75"], alpha=0.5, label="upper quartile")
 
         plt.axhline(
-            config['thresholds']['median_minium'], color='black', ls='dashed', alpha=0.2
+            config["thresholds"]["median_minium"], color="black", ls="dashed", alpha=0.2
         )
         plt.axhline(
-            config['thresholds']['quartile_range'][0],
-            color='black',
-            ls='dashed',
+            config["thresholds"]["quartile_range"][0],
+            color="black",
+            ls="dashed",
             alpha=0.2,
         )
         plt.axhline(
-            config['thresholds']['quartile_range'][1],
-            color='black',
-            ls='dashed',
+            config["thresholds"]["quartile_range"][1],
+            color="black",
+            ls="dashed",
             alpha=0.2,
         )
 
-        plt.xlabel('SRA Accession')
-        plt.ylabel('Per base read count')
-        plt.yscale('log')
-        plt.tick_params(axis='x', which='both', labelbottom=False)
+        plt.xlabel("SRA Accession")
+        plt.ylabel("Per base read count")
+        plt.yscale("log")
+        plt.tick_params(axis="x", which="both", labelbottom=False)
 
-        plt.legend(loc='best')
+        plt.legend(loc="best")
 
         plt.tight_layout()
         plt.savefig(output.fname)
@@ -525,11 +525,11 @@ rule plot_coverage_per_sample:
 
 rule retrieve_sra_metadata:
     output:
-        fname='results/data_retrieval/results/sra_metadata.csv.gz',
+        fname="results/data_retrieval/results/sra_metadata.csv.gz",
     params:
         chunk_size=200,  # chunks are necessary because `SRAweb` crashes otherwise
     benchmark:
-        'benchmarks/retrieve_sra_metadata.benchmark.txt'
+        "benchmarks/retrieve_sra_metadata.benchmark.txt"
     threads: 32
     resources:
         mem_mb=500,
@@ -556,7 +556,7 @@ rule retrieve_sra_metadata:
                 try:
                     return db.sra_metadata(chunk_list, detailed=True)
                 except (SystemExit, Exception) as e:
-                    print(f'Woopsie ({e}) starting with', chunk_list[0])
+                    print(f"Woopsie ({e}) starting with", chunk_list[0])
 
 
         df_list = pqdm(
@@ -566,7 +566,7 @@ rule retrieve_sra_metadata:
         )
 
         df_meta = pd.concat(df_list)
-        assert set(df_meta['run_accession'].tolist()) == set(
+        assert set(df_meta["run_accession"].tolist()) == set(
             accession_list
         ), df_meta.shape
 
@@ -577,17 +577,17 @@ rule retrieve_sra_metadata:
 rule compute_additional_properties:
     input:
         fname_list=expand(
-            'results/data_retrieval/alignment/{accession}.cram',
+            "results/data_retrieval/alignment/{accession}.cram",
             accession=accession_list,
         ),
         index_list=expand(
-            'results/data_retrieval/alignment/{accession}.cram.crai',
+            "results/data_retrieval/alignment/{accession}.cram.crai",
             accession=accession_list,
         ),
     output:
-        fname='results/data_retrieval/results/extra_properties.csv.gz',
+        fname="results/data_retrieval/results/extra_properties.csv.gz",
     benchmark:
-        'benchmarks/compute_additional_properties.benchmark.txt'
+        "benchmarks/compute_additional_properties.benchmark.txt"
     threads: 32
     resources:
         mem_mb=1_500,
@@ -606,7 +606,7 @@ rule compute_additional_properties:
             accession = os.path.splitext(os.path.basename(fname))[0]
 
             # compute mean read length
-            cram = pysam.AlignmentFile(fname, 'rc')
+            cram = pysam.AlignmentFile(fname, "rc")
 
             read_len = np.mean(
                 [
@@ -619,7 +619,7 @@ rule compute_additional_properties:
             cram.close()
 
             # return result
-            return {'accession': accession, 'avg_read_length': read_len}
+            return {"accession": accession, "avg_read_length": read_len}
 
 
         result = Parallel(n_jobs=threads)(
@@ -631,11 +631,11 @@ rule compute_additional_properties:
 
 rule assemble_final_dataframe:
     input:
-        fname_quantiles='results/data_retrieval/results/coverage_quantiles.csv.gz',
-        fname_extra='results/data_retrieval/results/extra_properties.csv.gz',
-        fname_meta='results/data_retrieval/results/sra_metadata.csv.gz',
+        fname_quantiles="results/data_retrieval/results/coverage_quantiles.csv.gz",
+        fname_extra="results/data_retrieval/results/extra_properties.csv.gz",
+        fname_meta="results/data_retrieval/results/sra_metadata.csv.gz",
     output:
-        fname=report('results/data_retrieval/results/final_dataframe.csv.gz'),
+        fname=report("results/data_retrieval/results/final_dataframe.csv.gz"),
     resources:
         mem_mb=40_000,
     run:
@@ -643,11 +643,11 @@ rule assemble_final_dataframe:
 
         # read data
         df_quantiles = pd.read_csv(
-            input.fname_quantiles, index_col='accession', low_memory=False
+            input.fname_quantiles, index_col="accession", low_memory=False
         )
 
-        df_extra = pd.read_csv(input.fname_extra, index_col='accession')
-        df_meta = pd.read_csv(input.fname_meta, index_col='run_accession')
+        df_extra = pd.read_csv(input.fname_extra, index_col="accession")
+        df_meta = pd.read_csv(input.fname_meta, index_col="run_accession")
 
         assert (
             sorted(df_quantiles.index)
@@ -660,9 +660,9 @@ rule assemble_final_dataframe:
             [
                 df_quantiles.rename(
                     columns={
-                        'q0.25': 'per_base_read_count_lower_quartile',
-                        'q0.5': 'per_base_read_count_median',
-                        'q0.75': 'per_base_read_count_upper_quartile',
+                        "q0.25": "per_base_read_count_lower_quartile",
+                        "q0.5": "per_base_read_count_median",
+                        "q0.75": "per_base_read_count_upper_quartile",
                     }
                 ),
                 df_extra,
@@ -676,11 +676,11 @@ rule assemble_final_dataframe:
 
 rule select_samples:
     input:
-        fname='results/data_retrieval/results/final_dataframe.csv.gz',
+        fname="results/data_retrieval/results/final_dataframe.csv.gz",
     output:
         fname=report(
-            'results/data_retrieval/results/selected_samples.csv',
-            caption='report/empty_caption.rst',
+            "results/data_retrieval/results/selected_samples.csv",
+            caption="report/empty_caption.rst",
         ),
     resources:
         mem_mb=20_000,
@@ -692,37 +692,37 @@ rule select_samples:
 
         # apply filters
         df_sub = df[
-            (df['per_base_read_count_median'] >= config['thresholds']['median_minium'])
+            (df["per_base_read_count_median"] >= config["thresholds"]["median_minium"])
             & (
-                df['per_base_read_count_lower_quartile']
-                >= config['thresholds']['quartile_range'][0]
+                df["per_base_read_count_lower_quartile"]
+                >= config["thresholds"]["quartile_range"][0]
             )
             & (
-                df['per_base_read_count_upper_quartile']
-                <= config['thresholds']['quartile_range'][1]
+                df["per_base_read_count_upper_quartile"]
+                <= config["thresholds"]["quartile_range"][1]
             )
-            & (df['library_strategy'].isin(['AMPLICON', 'RNA-Seq']))
-            & (df['library_source'].isin(['VIRAL RNA', 'TRANSCRIPTOMIC']))
-            & (df['host'].isin(['Homo sapiens']) | df['host'].isna())
+            & (df["library_strategy"].isin(["AMPLICON", "RNA-Seq"]))
+            & (df["library_source"].isin(["VIRAL RNA", "TRANSCRIPTOMIC"]))
+            & (df["host"].isin(["Homo sapiens"]) | df["host"].isna())
         ]
 
         selection = df_sub.index.tolist()
 
         # summary
-        print(f'Selected {df_sub.shape[0]}/{df.shape[0]} samples')
+        print(f"Selected {df_sub.shape[0]}/{df.shape[0]} samples")
 
         # save results
-        with open(output.fname, 'w') as fd:
-            fd.write('accession\n')
-            fd.write('\n'.join(selection))
+        with open(output.fname, "w") as fd:
+            fd.write("accession\n")
+            fd.write("\n".join(selection))
 
 
 rule distill_data_frame:
     input:
-        fname_df='results/data_retrieval/results/final_dataframe.csv.gz',
-        fname_selection='results/data_retrieval/results/selected_samples.csv',
+        fname_df="results/data_retrieval/results/final_dataframe.csv.gz",
+        fname_selection="results/data_retrieval/results/selected_samples.csv",
     output:
-        fname='results/data_retrieval/results/distilled_dataframe.csv.gz',
+        fname="results/data_retrieval/results/distilled_dataframe.csv.gz",
     resources:
         mem_mb=40_000,
     run:
@@ -732,30 +732,30 @@ rule distill_data_frame:
         df_all = pd.read_csv(input.fname_df, index_col=0, low_memory=False)
         df_samples = pd.read_csv(input.fname_selection)
 
-        df_all = df_all.loc[df_samples['accession']]
+        df_all = df_all.loc[df_samples["accession"]]
 
         df = df_all[
             [
-                'library_source',
-                'library_strategy',
-                'per_base_read_count_lower_quartile',
-                'per_base_read_count_median',
-                'per_base_read_count_upper_quartile',
+                "library_source",
+                "library_strategy",
+                "per_base_read_count_lower_quartile",
+                "per_base_read_count_median",
+                "per_base_read_count_upper_quartile",
             ]
         ].copy()
 
         # helper function
         def combine(column_list, na_values=None):
-            print(f'--- {column_list} --')
+            print(f"--- {column_list} --")
             res = df_all[column_list[0]]
-            print(' > ', column_list[0], res.isna().sum())
+            print(" > ", column_list[0], res.isna().sum())
 
             for col in column_list[1:]:
                 if isinstance(col, str):
                     res = res.combine_first(df_all[col])
                 else:
                     res = res.combine_first(col(df_all))
-                print(' > ', col, res.isna().sum())
+                print(" > ", col, res.isna().sum())
 
             if na_values is not None:
                 res = res.replace({v: pd.NA for v in na_values})
@@ -766,31 +766,31 @@ rule distill_data_frame:
 
 
         # engineer additional features
-        assert 'location' not in df.columns
-        df['location'] = combine(
+        assert "location" not in df.columns
+        df["location"] = combine(
             [
-                'geographic location (country and/or sea)',
-                lambda x: x['geo_loc_name'].str.split(':').str[0],
+                "geographic location (country and/or sea)",
+                lambda x: x["geo_loc_name"].str.split(":").str[0],
             ],
-            ['Not Applicable', 'not applicable', 'missing', 'not collected'],
+            ["Not Applicable", "not applicable", "missing", "not collected"],
         )
 
-        assert 'host' not in df.columns
-        df['host'] = combine(
-            ['host', 'host common name', 'host scientific name'],
-            ['not provided', 'Not Applicable'],
+        assert "host" not in df.columns
+        df["host"] = combine(
+            ["host", "host common name", "host scientific name"],
+            ["not provided", "Not Applicable"],
         )
 
-        assert 'host_sex' not in df.columns
-        df['host_sex'] = combine(
-            ['host_sex', 'host sex'], ['not provided', 'missing', 'Unknown']
+        assert "host_sex" not in df.columns
+        df["host_sex"] = combine(
+            ["host_sex", "host sex"], ["not provided", "missing", "Unknown"]
         )
 
-        assert 'host_age' not in df.columns
-        df['host_age'] = combine(['host_age', 'host age'], ['missing'])
+        assert "host_age" not in df.columns
+        df["host_age"] = combine(["host_age", "host age"], ["missing"])
 
-        assert 'collection_date' not in df.columns
-        df['collection_date'] = combine(['collection_date', 'collection date'])
+        assert "collection_date" not in df.columns
+        df["collection_date"] = combine(["collection_date", "collection date"])
 
         # save result
         print(df.isna().sum())

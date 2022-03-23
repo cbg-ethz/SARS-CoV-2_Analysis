@@ -1,21 +1,21 @@
-configfile: 'config/config.yaml'
+configfile: "config/config.yaml"
 
 
-include: 'rules/data_retrieval.smk'
-include: 'rules/variant_calling.smk'
-include: 'rules/visualize_results.smk'
+include: "rules/data_retrieval.smk"
+include: "rules/variant_calling.smk"
+include: "rules/visualize_results.smk"
 
 
 rule all:
     input:
-        'results/data_retrieval/plots/coverage_per_locus.pdf',
-        'results/data_retrieval/plots/coverage_per_sample.pdf',
-        'results/data_retrieval/results/distilled_dataframe.csv.gz',
-        'results/variant_calling/vcf_data.csv',
-        'results/analysis/plots/snv_coverage_plot.pdf',
-        'results/analysis/plots/av_top_positions.pdf',
-        'results/analysis/plots/heatmaps.png',
-        'results/analysis/plots/histograms/',
-        'results/analysis/plots/time_regression.png',
-        'results/analysis/top_bases_extended.csv',
-        'results/analysis/top_samples.csv',
+        "results/data_retrieval/plots/coverage_per_locus.pdf",
+        "results/data_retrieval/plots/coverage_per_sample.pdf",
+        "results/data_retrieval/results/distilled_dataframe.csv.gz",
+        "results/variant_calling/vcf_data.csv",
+        "results/analysis/plots/snv_coverage_plot.pdf",
+        "results/analysis/plots/av_top_positions.pdf",
+        "results/analysis/plots/heatmaps.png",
+        "results/analysis/plots/histograms/",
+        "results/analysis/plots/time_regression.png",
+        "results/analysis/top_bases_extended.csv",
+        "results/analysis/top_samples.csv",
